@@ -8,6 +8,9 @@ data <- read_csv("data.csv")
 
 data %>% filter(municipality == "Лискинский муниципальный район") %>% View()
 data %>% filter(municipality == "город Воронеж") %>% View()
+data %>% filter(municipality == "город Тамбов") %>% View()
+data %>% filter(municipality == "Город Горно-Алтайск") %>% View()
+data %>% filter(municipality == "город Кирсанов") %>% View()
 
 
 

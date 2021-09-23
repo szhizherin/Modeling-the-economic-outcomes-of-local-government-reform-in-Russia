@@ -6,8 +6,8 @@ data <- read_csv("data.csv")
 
 
 
-data %>% filter(municipality == "Лискинский муниципальный район")
-data %>% filter(municipality == "город Воронеж")
+data %>% filter(municipality == "Лискинский муниципальный район") %>% View()
+data %>% filter(municipality == "город Воронеж") %>% View()
 
 
 
@@ -62,4 +62,33 @@ p <- data_nona %>%
   labs(fill="")
 p
 
+
+p <- data_nona %>% filter(mun_type == "Городской округ, городской округ с внутригородским делением") %>% 
+  ggplot(aes(x=year, fill=model)) +
+  geom_histogram(binwidth=0.51, color="#e9ecef", alpha=0.6, position = 'identity') +
+  ggtitle("Динамика формы управления по городским округам") +
+  scale_fill_manual(values=c("#69b3a2", "#404080", "grey")) +
+  theme_ipsum() +
+  theme(
+    plot.title = element_text(size=15),
+    axis.text.x = element_text(angle = 90, vjust = 0.5)
+  ) +
+  scale_x_continuous("Год", labels = as.character(data_nona$year), breaks = data_nona$year) +
+  labs(fill="")
+p
+
+
+p <- data_nona %>% filter(mun_type == "Муниципальный район") %>% 
+  ggplot(aes(x=year, fill=model)) +
+  geom_histogram(binwidth=0.51, color="#e9ecef", alpha=0.6, position = 'identity') +
+  ggtitle("Динамика формы управления по муниципальным районам") +
+  scale_fill_manual(values=c("#69b3a2", "#404080", "grey")) +
+  theme_ipsum() +
+  theme(
+    plot.title = element_text(size=15),
+    axis.text.x = element_text(angle = 90, vjust = 0.5)
+  ) +
+  scale_x_continuous("Год", labels = as.character(data_nona$year), breaks = data_nona$year) +
+  labs(fill="")
+p
 

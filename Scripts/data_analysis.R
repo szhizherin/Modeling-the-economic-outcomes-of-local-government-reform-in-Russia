@@ -66,6 +66,22 @@ p <- data_nona %>%
 p
 
 
+data_nona <- data %>% drop_na()
+p <- data_nona %>%
+  ggplot(aes(x=year, fill=model)) +
+  geom_bar(position = 'stack') +
+  ggtitle("Динамика формы управления") +
+  scale_fill_manual(values=c("#69b3a2", "#404080", "grey")) +
+  theme_ipsum() +
+  theme(
+    plot.title = element_text(size=15),
+    axis.text.x = element_text(angle = 90, vjust = 0.5)
+  ) +
+  scale_x_continuous("Год", labels = as.character(data_nona$year), breaks = data_nona$year) +
+  labs(fill="")
+p
+
+
 p <- data_nona %>% filter(mun_type == "Городской округ, городской округ с внутригородским делением") %>% 
   ggplot(aes(x=year, fill=model)) +
   geom_histogram(binwidth=0.51, color="#e9ecef", alpha=0.6, position = 'identity') +
@@ -81,9 +97,24 @@ p <- data_nona %>% filter(mun_type == "Городской округ, город
 p
 
 
+p <- data_nona %>% filter(mun_type == "Городской округ, городской округ с внутригородским делением") %>% 
+  ggplot(aes(x=year, fill=model)) +
+  geom_bar(position = 'stack') +
+  ggtitle("Динамика формы управления по городским округам") +
+  scale_fill_manual(values=c("#69b3a2", "#404080", "grey")) +
+  theme_ipsum() +
+  theme(
+    plot.title = element_text(size=15),
+    axis.text.x = element_text(angle = 90, vjust = 0.5)
+  ) +
+  scale_x_continuous("Год", labels = as.character(data_nona$year), breaks = data_nona$year) +
+  labs(fill="")
+p
+
+
 p <- data_nona %>% filter(mun_type == "Муниципальный район") %>% 
   ggplot(aes(x=year, fill=model)) +
-  geom_histogram(binwidth=0.51, color="#e9ecef", alpha=0.6, position = 'identity') +
+  geom_bar(position = 'stack') +
   ggtitle("Динамика формы управления по муниципальным районам") +
   scale_fill_manual(values=c("#69b3a2", "#404080", "grey")) +
   theme_ipsum() +

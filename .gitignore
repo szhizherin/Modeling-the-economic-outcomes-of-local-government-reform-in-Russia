@@ -39,5 +39,7 @@ vignettes/*.pdf
 .Renviron
 
 
-# BDMO
-BDMO_01012018/
+
+
+# folders with publically available raw data
+raw_data/

@@ -2,7 +2,7 @@ library(tidyverse)
 library(hrbrthemes)
 
 
-data <- read_csv("data.csv")
+data <- read_csv("raw_data/bumo_models_30122018/data.csv")
 
 
 

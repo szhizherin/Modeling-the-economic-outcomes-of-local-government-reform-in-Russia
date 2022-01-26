@@ -128,18 +128,73 @@ p
 
 
 
+# совокупная динамика, 2008-2012
+data_nona <- data %>% filter(year %in% 2008:2012) %>% drop_na()
+p <- data_nona %>%
+  ggplot(aes(x=year, fill=model)) +
+  geom_histogram(binwidth=0.51, color="#e9ecef", alpha=0.6, position = 'identity') +
+  ggtitle("Динамика формы управления") +
+  scale_fill_manual(values=c("#69b3a2", "#404080", "grey")) +
+  theme_ipsum() +
+  theme(
+    plot.title = element_text(size=15),
+    axis.text.x = element_text(angle = 90, vjust = 0.5)
+  ) +
+  scale_x_continuous("Год", labels = as.character(data_nona$year), breaks = data_nona$year) +
+  labs(fill="")
+p
+
+data_nona <- data %>% filter(year %in% 2008:2012) %>% drop_na()
+p <- data_nona %>%
+  ggplot(aes(x=year, fill=model)) +
+  geom_bar(position = 'stack') +
+  ggtitle("Динамика формы управления") +
+  scale_fill_manual(values=c("#69b3a2", "#404080", "grey")) +
+  theme_ipsum() +
+  theme(
+    plot.title = element_text(size=15),
+    axis.text.x = element_text(angle = 90, vjust = 0.5)
+  ) +
+  scale_x_continuous("Год", labels = as.character(data_nona$year), breaks = data_nona$year) +
+  labs(fill="")
+p
+
+
 #########################################################################
 ########################          БДМО           ########################
 #########################################################################
 
 
+# memory.limit(size=25000)
+
 BDMO_variables <- read_csv("raw_data/BDMO_01012018/BDMO variables.csv")
 BDMO <- read_csv("raw_data/BDMO_01012018/1 indicator clean v2.csv")
+BDMO2 <- read_csv("raw_data/BDMO_01012018/2 indicator clean v2.csv")
+
+BDMO_variables %>% filter(indicator_text == "Общий объем расходов муниципального бюджета")
 
 
+# страница 43
+y_names <- c("Общий объем расходов бюджета муниципального образования|||t8313001|||Всего")
 
 
+y_ids <- (BDMO_variables %>% 
+  filter(indicator_text == "Общий объем расходов бюджета муниципального образования|||t8313001|||Всего"))$indicator_id
 
 
+treatment_data <- read_csv("raw_data/bumo_models_30122018/data.csv")
+
+reg_data <- BDMO2 %>% select(c(y_ids, "oktmo", "year"))
+reg_data$t8313001_1 %>% is.na() %>% sum()
+
+dd <- reg_data %>% inner_join(treatment_data, by = c("oktmo", "year")) %>% arrange(municipality, year)
 
 
+for (i in 2006:2018) {
+  print(i)
+  print(dd %>% filter(year == i) %>% is.na() %>% colSums())
+}
+
+dd %>% select(oktmo) %>% unique() %>% count()
+
+# ну то есть в реальности для совокупных расходов 2008-2012

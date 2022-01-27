@@ -1,5 +1,6 @@
 library(tidyverse)
 library(hrbrthemes)
+library(did)
 
 
 data <- read_csv("raw_data/bumo_models_30122018/data.csv")
@@ -165,13 +166,13 @@ p
 #########################################################################
 
 
-# memory.limit(size=25000)
+memory.limit(size=25000)
 
 BDMO_variables <- read_csv("raw_data/BDMO_01012018/BDMO variables.csv")
 BDMO <- read_csv("raw_data/BDMO_01012018/1 indicator clean v2.csv")
 BDMO2 <- read_csv("raw_data/BDMO_01012018/2 indicator clean v2.csv")
 
-BDMO_variables %>% filter(indicator_text == "Общий объем расходов муниципального бюджета")
+#BDMO_variables %>% filter(indicator_text == "Общий объем расходов муниципального бюджета")
 
 
 # страница 43
@@ -185,7 +186,6 @@ y_ids <- (BDMO_variables %>%
 treatment_data <- read_csv("raw_data/bumo_models_30122018/data.csv")
 
 reg_data <- BDMO2 %>% select(c(y_ids, "oktmo", "year"))
-reg_data$t8313001_1 %>% is.na() %>% sum()
 
 dd <- reg_data %>% inner_join(treatment_data, by = c("oktmo", "year")) %>% arrange(municipality, year)
 
@@ -198,3 +198,62 @@ for (i in 2006:2018) {
 dd %>% select(oktmo) %>% unique() %>% count()
 
 # ну то есть в реальности для совокупных расходов 2008-2012
+dd <- dd %>% filter(year %in% 2008:2012)
+
+
+dd <- dd %>% group_by(oktmo) %>% mutate(T_na = sum(is.na(model)))
+dd <- dd %>% filter(T_na == 0)
+
+dd <- dd %>% group_by(oktmo) %>% mutate(Y_na = sum(is.na(t8313001_1)))
+dd <- dd %>% filter(Y_na == 0) # минус 3000 наблюдений
+
+dd <- dd %>% mutate(Treatment = case_when(model == "Избираемый мэр" ~ 0,
+                                          model == "Сити-менджер" ~ 1))
+
+dd <- dd %>% group_by(oktmo) %>% mutate(always_treated = case_when(mean(Treatment) == 1 ~ 1,
+                                                                   mean(Treatment) != 1 ~ 0))
+
+# drop always treated
+dd <- dd %>% filter(always_treated == 0) # минус 2000 наблюдений
+
+dd$first.treat = dd$Treatment * dd$year
+dd[dd$first.treat == 0]$first.treat <- 3000
+
+dd <- dd %>% mutate(first.treat = case_when(first.treat == 0 ~ Inf,
+                                            first.treat != 0 ~ first.treat))
+
+dd <- dd %>% group_by(oktmo) %>% mutate(first.treat = min(first.treat))
+
+
+dd <- dd %>% mutate(first.treat = case_when(first.treat == Inf ~ 0,
+                                            first.treat != Inf ~ first.treat))
+
+dd <- dd %>% filter(first.treat != 2008)
+
+
+out <- att_gt(yname = "t8313001_1",
+              gname = "first.treat",
+              idname = "oktmo",
+              tname = "year",
+              xformla = ~1,
+              data = dd,
+              est_method = "reg"
+)
+
+out %>% summary()
+ggdid(out)
+
+
+es <- aggte(out, type = "dynamic")
+es %>% summary()
+ggdid(es)
+
+
+group_effects <- aggte(out, type = "group")
+group_effects %>% summary()
+
+
+
+
+
+

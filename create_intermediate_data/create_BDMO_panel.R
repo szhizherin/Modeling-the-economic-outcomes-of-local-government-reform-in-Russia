@@ -10,14 +10,24 @@ library(dplyr)
 library(readr)
 
 
-memory.limit(size=25000)
+# memory.limit(size=25000)
 
 BDMO_variables <- read_csv("raw_data/BDMO_01012018/BDMO variables.csv")
 BDMO <- read_csv("raw_data/BDMO_01012018/1 indicator clean v2.csv")
 BDMO2 <- read_csv("raw_data/BDMO_01012018/2 indicator clean v2.csv")
+BDMO3 <- read_csv("raw_data/BDMO_01012018/3 indicator clean v2.csv")
+
+
+pr <- BDMO2 %>% problems()
+pr$col %>% unique() %>% length()
+pr$row %>% unique() %>% length()
 
 
 # страница 43
+# страница 12 про взвешивание бюджетов и инвестиций по покупательной способности денег
+# Кроме того, все переменные в денежном выражении из номинальных были преобразованы в реальные
+# значения, то есть с поправкой на инфляцию.
+# В целях анализа целесообразно использовать 2008 г. как наиболее ранний
 y_names <- c("Общий объем расходов бюджета муниципального образования|||t8313001|||Всего",
              "Расходы бюджета муниципального образования на содержание работников органов местного самоуправления в расчете на одного жителя муниципального образования (2008г. - тысяч рублей)",
              "Расходы бюджета муниципального образования на содержание работников органов местного самоуправления в расчете на одного жителя муниципального образования (2008г. - тыс. рублей)",
@@ -58,10 +68,47 @@ X_names <- c("Оценка численности населения на 1 ян
              "Общая протяженность улиц, проездов, набережных на конец года")
 
 
-X_names <- c()
+get_ids <- function(BDMO_vars, names) {
+  ids <- c()
+  for (name in names) {
+    id <- (BDMO_vars %>% filter(indicator_text == name))$indicator_id
+    ids <- c(ids, id)
+  }
+  return(ids)
+}
 
-y_ids <- (BDMO_variables %>% 
-            filter(indicator_text == "Общий объем расходов бюджета муниципального образования|||t8313001|||Всего"))$indicator_id
+y_ids <- get_ids(BDMO_variables, y_names)
+X_ids <- get_ids(BDMO_variables, X_names)
+
+
+# TODO: таблица соответствия name, id -> сохранить в intermediate_data
+
+
+BDMO_ids <- read.csv("raw_data/BDMO_01012018/1 indicator clean v2.csv", nrows = 1, encoding = "UTF-8") %>% 
+  select(!c(1:7)) %>% select(!c(year)) %>% colnames()
+
+BDMO2_ids <- read.csv("raw_data/BDMO_01012018/2 indicator clean v2.csv", nrows = 1, encoding = "UTF-8") %>% 
+  select(!c(1:7)) %>% select(!c(year)) %>% colnames()
+
+BDMO3_ids <- read.csv("raw_data/BDMO_01012018/3 indicator clean v2.csv", nrows = 1, encoding = "UTF-8") %>% 
+  select(!c(1:7)) %>% select(!c(year)) %>% colnames()
+
+
+nth_ids <- function(BDMO_ids, ids) {
+  nth_ids <- c()
+  for (id in ids) {
+    if (id %in% BDMO_ids) {
+      nth_ids <- c(nth_ids, id)
+    }
+  }
+  return(nth_ids)
+}
+
+first_ids <- nth_ids(BDMO_ids, c(y_ids, X_ids))
+second_ids <- nth_ids(BDMO2_ids, c(y_ids, X_ids))
+third_ids <- nth_ids(BDMO3_ids, c(y_ids, X_ids))
+
+
 
 
 treatment_data <- read_csv("raw_data/bumo_models_30122018/data.csv")

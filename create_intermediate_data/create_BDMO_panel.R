@@ -1,6 +1,8 @@
-# Purpose: create BDMO_panel.csv
+# Purpose: create basic BDMO panel and its id - variable name correspondence
 # Inputs:  raw_data/BDMO_01012018/BDMO variables.csv
+#          raw_data/BDMO_01012018/1 indicator clean v2.csv
 #          raw_data/BDMO_01012018/2 indicator clean v2.csv
+#          raw_data/BDMO_01012018/3 indicator clean v2.csv
 # Outputs: intermediate_data/BDMO_panel.csv
 #          intermediate_data/BDMO_id_name.csv
 
@@ -12,15 +14,9 @@ library(dplyr)
 library(readr)
 
 
-# memory.limit(size=25000)
+
 
 BDMO_variables <- read_csv("raw_data/BDMO_01012018/BDMO variables.csv")
-
-
-pr <- BDMO2 %>% problems()
-pr$col %>% unique() %>% length()
-pr$row %>% unique() %>% length()
-
 
 # страница 43
 # страница 12 про взвешивание бюджетов и инвестиций по покупательной способности денег
@@ -56,7 +52,6 @@ y_names <- c("Общий объем расходов бюджета муници
              "Число семей, получивших жилые помещения и улучшивших жилищные условия в отчетном году.|||t8011010|||Всего",
              "Общая протяженность освещенных частей улиц, проездов, набережных на конец года")
 
-# тип МО?
 X_names <- c("Оценка численности населения на 1 января текущего года|||t8112027|||Все население",
              "Удельный вес прибыльных организаций в общем числе организаций (по 2016 год)|||t8042018|||Всего_Всего",
              "Среднемесячная заработная плата работников организаций (по 2016 год)|||t8123007|||Всего",
@@ -112,6 +107,7 @@ first_ids <- nth_ids(BDMO_ids, c(y_ids, X_ids))
 second_ids <- nth_ids(BDMO2_ids, c(y_ids, X_ids))
 third_ids <- nth_ids(BDMO3_ids, c(y_ids, X_ids))
 
+
 id_vars <- c("mun_type", "municipality", "oktmo", 
              "oktmo_munr", "rayon", "region", "year")
 
@@ -127,39 +123,21 @@ BDMO_panel <- first %>% merge(second, by = id_vars, all = TRUE) %>%
   merge(third, by = id_vars, all = TRUE)
 
 
-ff <- read.csv("raw_data/BDMO_01012018/1 indicator clean v2.csv", 
-                     nrows = 1, encoding = "UTF-8")
+treatment_data <- read_csv("raw_data/bumo_models_30122018/data.csv") %>% 
+  select(oktmo, year, model)
 
-treatment_data <- read_csv("raw_data/bumo_models_30122018/data.csv")
-
-reg_data <- BDMO2 %>% select(c(y_ids, "oktmo", "year"))
-
-dd <- reg_data %>% inner_join(treatment_data, by = c("oktmo", "year")) %>% arrange(municipality, year)
-
-
-for (i in 2006:2018) {
-  print(i)
-  print(dd %>% filter(year == i) %>% is.na() %>% colSums())
-}
-
-dd %>% select(oktmo) %>% unique() %>% count()
+# right join
+BDMO_panel <- BDMO_panel %>% 
+  merge(treatment_data, by = c("oktmo", "year"), all.y = TRUE) %>% 
+  arrange(municipality, year)
 
 
+# drop "treatment for all years is NA" municipalities
+BDMO_panel <- BDMO_panel %>% 
+  group_by(oktmo) %>% 
+  filter(!all(is.na(model)) & !all(is.na(oktmo))) %>% 
+  ungroup()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+BDMO_panel %>% write.csv("intermediate_data/BDMO_panel.csv", 
+                           fileEncoding = "UTF-8")
 

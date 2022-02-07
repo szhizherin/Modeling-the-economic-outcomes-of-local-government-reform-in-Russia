@@ -2,10 +2,12 @@
 # Inputs:  raw_data/BDMO_01012018/BDMO variables.csv
 #          raw_data/BDMO_01012018/2 indicator clean v2.csv
 # Outputs: intermediate_data/BDMO_panel.csv
+#          intermediate_data/BDMO_id_name.csv
 
 
 
 
+library(data.table)
 library(dplyr)
 library(readr)
 
@@ -13,9 +15,6 @@ library(readr)
 # memory.limit(size=25000)
 
 BDMO_variables <- read_csv("raw_data/BDMO_01012018/BDMO variables.csv")
-BDMO <- read_csv("raw_data/BDMO_01012018/1 indicator clean v2.csv")
-BDMO2 <- read_csv("raw_data/BDMO_01012018/2 indicator clean v2.csv")
-BDMO3 <- read_csv("raw_data/BDMO_01012018/3 indicator clean v2.csv")
 
 
 pr <- BDMO2 %>% problems()
@@ -81,16 +80,21 @@ y_ids <- get_ids(BDMO_variables, y_names)
 X_ids <- get_ids(BDMO_variables, X_names)
 
 
-# TODO: таблица соответствия name, id -> сохранить в intermediate_data
+BDMO_id_name <- data.frame(id = c(y_ids, X_ids), name = c(y_names, X_names))
+BDMO_id_name %>% write.csv("intermediate_data/BDMO_id_name.csv", 
+                           fileEncoding = "UTF-8")
 
 
-BDMO_ids <- read.csv("raw_data/BDMO_01012018/1 indicator clean v2.csv", nrows = 1, encoding = "UTF-8") %>% 
+BDMO_ids <- read.csv("raw_data/BDMO_01012018/1 indicator clean v2.csv", 
+                     nrows = 1, encoding = "UTF-8") %>% 
   select(!c(1:7)) %>% select(!c(year)) %>% colnames()
 
-BDMO2_ids <- read.csv("raw_data/BDMO_01012018/2 indicator clean v2.csv", nrows = 1, encoding = "UTF-8") %>% 
+BDMO2_ids <- read.csv("raw_data/BDMO_01012018/2 indicator clean v2.csv",        
+                      nrows = 1, encoding = "UTF-8") %>% 
   select(!c(1:7)) %>% select(!c(year)) %>% colnames()
 
-BDMO3_ids <- read.csv("raw_data/BDMO_01012018/3 indicator clean v2.csv", nrows = 1, encoding = "UTF-8") %>% 
+BDMO3_ids <- read.csv("raw_data/BDMO_01012018/3 indicator clean v2.csv", 
+                      nrows = 1, encoding = "UTF-8") %>% 
   select(!c(1:7)) %>% select(!c(year)) %>% colnames()
 
 
@@ -108,8 +112,23 @@ first_ids <- nth_ids(BDMO_ids, c(y_ids, X_ids))
 second_ids <- nth_ids(BDMO2_ids, c(y_ids, X_ids))
 third_ids <- nth_ids(BDMO3_ids, c(y_ids, X_ids))
 
+id_vars <- c("mun_type", "municipality", "oktmo", 
+             "oktmo_munr", "rayon", "region", "year")
+
+first <- fread("raw_data/BDMO_01012018/1 indicator clean v2.csv", 
+               select = c(id_vars, first_ids), encoding = "UTF-8")
+second <- fread("raw_data/BDMO_01012018/2 indicator clean v2.csv", 
+               select = c(id_vars, second_ids), encoding = "UTF-8")
+third <- fread("raw_data/BDMO_01012018/3 indicator clean v2.csv", 
+                select = c(id_vars, third_ids), encoding = "UTF-8")
+
+# outer join
+BDMO_panel <- first %>% merge(second, by = id_vars, all = TRUE) %>% 
+  merge(third, by = id_vars, all = TRUE)
 
 
+ff <- read.csv("raw_data/BDMO_01012018/1 indicator clean v2.csv", 
+                     nrows = 1, encoding = "UTF-8")
 
 treatment_data <- read_csv("raw_data/bumo_models_30122018/data.csv")
 

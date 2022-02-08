@@ -3,6 +3,7 @@
 #          raw_data/BDMO_01012018/1 indicator clean v2.csv
 #          raw_data/BDMO_01012018/2 indicator clean v2.csv
 #          raw_data/BDMO_01012018/3 indicator clean v2.csv
+#          raw_data/bumo_models_30122018/data.csv
 # Outputs: intermediate_data/BDMO_panel.csv
 #          intermediate_data/BDMO_id_name.csv
 

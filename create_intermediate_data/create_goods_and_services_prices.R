@@ -1,5 +1,5 @@
 # Purpose: create goods and services prices table for nominal variables weighting
-# Inputs:  raw_data/BDMO_01012018/BDMO variables.csv
+# Inputs:  raw_data/Стоимость фиксированного набора товаров и услуг.xls
 # Outputs: intermediate_data/goods_and_services_prices.csv
 
 

@@ -1,5 +1,6 @@
 # Purpose: create goods and services prices table for nominal variables weighting
 # Inputs:  raw_data/Стоимость фиксированного набора товаров и услуг.xls
+#          raw_data/regions_oktmo.xlsx
 # Outputs: intermediate_data/goods_and_services_prices.csv
 
 
@@ -28,7 +29,11 @@ for (year in 2:17) {
 colnames(goods_and_services_prices) <- c("region", 2006:2021)
 
 
+# add oktmo codes
+regions_oktmo <- read_excel("raw_data/regions_oktmo.xlsx")
+goods_and_services_prices <- goods_and_services_prices %>% 
+  merge(regions_oktmo, by = "region")
 
-
-
+goods_and_services_prices %>% write.csv("intermediate_data/goods_and_services_prices.csv", 
+                                        fileEncoding = "UTF-8")
 

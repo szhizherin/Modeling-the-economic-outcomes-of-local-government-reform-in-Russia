@@ -47,7 +47,7 @@ goods_and_services_prices[,2:17] <- t(t(goods_and_services_prices[,2:17]) / msk_
 
 # convert to long format
 goods_and_services_prices <- goods_and_services_prices %>% as.data.table() %>% 
-  melt(id.vars = c("region", "oktmo"), value.name = "index", variable.name = "year") %>% View()
+  melt(id.vars = c("region", "oktmo"), value.name = "index", variable.name = "year")
 
 goods_and_services_prices %>% write.csv("intermediate_data/goods_and_services_prices.csv", 
                                         fileEncoding = "UTF-8")

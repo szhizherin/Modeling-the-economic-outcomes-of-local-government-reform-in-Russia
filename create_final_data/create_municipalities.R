@@ -66,6 +66,7 @@ municipalities <- municipalities %>%
 municipalities <- municipalities %>% 
   merge(multiplier, by = c("region_oktmo", "year"), all.x = T)
 
+
 municipalities %>% write.csv("final_data/municipalities.csv", 
                              fileEncoding = "UTF-8")
 

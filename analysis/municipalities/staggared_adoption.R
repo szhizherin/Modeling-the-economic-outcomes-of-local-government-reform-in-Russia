@@ -1,8 +1,7 @@
-# Purpose: create municipalities table for further analysis
-# Inputs:  intermediate_data/BDMO_panel.csv
-#          intermediate_data/goods_and_services_prices.csv
-#          intermediate_data/CPI.csv
-# Outputs: final_data/municipalities.csv
+# Purpose: estimate staggered adoption models on municipalities data
+# Inputs:  intermediate_data/BDMO_id_name.csv
+#          final_data/municipalities.csv
+# Outputs: -
 
 
 

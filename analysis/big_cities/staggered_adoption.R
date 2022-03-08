@@ -1,6 +1,6 @@
-# Purpose: estimate staggered adoption models on municipalities data
+# Purpose: estimate staggered adoption models on big_cities data
 # Inputs:  intermediate_data/BDMO_id_name.csv
-#          final_data/municipalities.csv
+#          final_data/big_cities.csv
 # Outputs: -
 
 
@@ -15,7 +15,7 @@ library(tidyr)
 
 
 
-municipalities <- read_csv("final_data/municipalities.csv") %>% select(-c(1))
+big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
 BDMO_id_name <- read_csv("intermediate_data/BDMO_id_name.csv") %>% select(-c(1))
 
 
@@ -136,41 +136,42 @@ for (name in y_names) {
 
 "Расходы местного бюджета, фактически исполненные|||t8013002|||Всего" %>% get_code()
 
+# big_cities
 # "c" stands for inflation- and regional prices-corrected
-municipalities$t8045002_21_c <- municipalities$t8045002_21 * municipalities$index
-municipalities$t8045002_26_c <- municipalities$t8045002_26 * municipalities$index
-municipalities$t8045002_27_c <- municipalities$t8045002_27 * municipalities$index
+big_cities$t8045002_21_c <- big_cities$t8045002_21 * big_cities$index
+big_cities$t8045002_26_c <- big_cities$t8045002_26 * big_cities$index
+big_cities$t8045002_27_c <- big_cities$t8045002_27 * big_cities$index
 
 
-municipalities$t8013002_1_c <- municipalities$t8013002_1 * municipalities$index
-municipalities$t8013004_c <- municipalities$t8013004 * municipalities$index
-municipalities$t8313004_c <- municipalities$t8313004 * municipalities$index # 1 + t8042018_kfs199_okved0 + t8045002_21
-municipalities$t8013002_212_c <- municipalities$t8013002_212 * municipalities$index
-municipalities$t8013002_220_c <- municipalities$t8013002_220 * municipalities$index
-municipalities$t8013002_221_c <- municipalities$t8013002_221 * municipalities$index
-municipalities$t8013002_229_c <- municipalities$t8013002_229 * municipalities$index
-municipalities$t8013002_234_c <- municipalities$t8013002_234 * municipalities$index
-municipalities$t8013002_239_c <- municipalities$t8013002_239 * municipalities$index
-municipalities$t8013002_285_c <- municipalities$t8013002_285 * municipalities$index
-municipalities$t8013002_434_c <- municipalities$t8013002_434 * municipalities$index
-municipalities$t8109002_c <- municipalities$t8109002 * municipalities$index
-municipalities$t8109001_c <- municipalities$t8109001 * municipalities$index
-municipalities$t8013001_1_c <- municipalities$t8013001_1 * municipalities$index
-municipalities$t8013001_89_c <- municipalities$t8013001_89 * municipalities$index
-municipalities$t8013001_34_c <- municipalities$t8013001_34 * municipalities$index
-municipalities$t8013001_36_c <- municipalities$t8013001_36 * municipalities$index
-municipalities$t8013001_27_c <- municipalities$t8013001_27 * municipalities$index
+big_cities$t8013002_1_c <- big_cities$t8013002_1 * big_cities$index
+big_cities$t8013004_c <- big_cities$t8013004 * big_cities$index
+big_cities$t8313004_c <- big_cities$t8313004 * big_cities$index # 1 + t8042018_kfs199_okved0 + t8045002_21
+big_cities$t8013002_212_c <- big_cities$t8013002_212 * big_cities$index
+big_cities$t8013002_220_c <- big_cities$t8013002_220 * big_cities$index
+big_cities$t8013002_221_c <- big_cities$t8013002_221 * big_cities$index
+big_cities$t8013002_229_c <- big_cities$t8013002_229 * big_cities$index
+big_cities$t8013002_234_c <- big_cities$t8013002_234 * big_cities$index
+big_cities$t8013002_239_c <- big_cities$t8013002_239 * big_cities$index
+big_cities$t8013002_285_c <- big_cities$t8013002_285 * big_cities$index
+big_cities$t8013002_434_c <- big_cities$t8013002_434 * big_cities$index
+big_cities$t8109002_c <- big_cities$t8109002 * big_cities$index
+big_cities$t8109001_c <- big_cities$t8109001 * big_cities$index
+big_cities$t8013001_1_c <- big_cities$t8013001_1 * big_cities$index
+big_cities$t8013001_89_c <- big_cities$t8013001_89 * big_cities$index
+big_cities$t8013001_34_c <- big_cities$t8013001_34 * big_cities$index
+big_cities$t8013001_36_c <- big_cities$t8013001_36 * big_cities$index
+big_cities$t8013001_27_c <- big_cities$t8013001_27 * big_cities$index
 
 
 # доля водопроводной сети, нуждающейся в замене
-municipalities["t8008008/t8008007"] <- municipalities$t8008008 / municipalities$t8008007 #
+big_cities["t8008008/t8008007"] <- big_cities$t8008008 / big_cities$t8008007 #
 # доля отремонтированной из нуждающейся
-municipalities["t8008007/t8008025"] <- municipalities$t8008007 / municipalities$t8008025
+big_cities["t8008007/t8008025"] <- big_cities$t8008007 / big_cities$t8008025
 # доля освещённых улиц
-municipalities["t8006003/t8006007"] <- municipalities$t8006003 / municipalities$t8006007
+big_cities["t8006003/t8006007"] <- big_cities$t8006003 / big_cities$t8006007
 
 
-y_id <- "t8006003/t8006007"
+y_id <- "t8313004_c"
 
 
 x_fm <- ~ 1 + t8042018_kfs199_okved0 + t8045002_21_c + t8045002_26_c + t8045002_27_c +
@@ -189,7 +190,7 @@ out <- att_gt(yname = y_id,
               idname = "oktmo",
               tname = "year",
               xformla = x_fm,
-              data = municipalities,
+              data = big_cities,
               est_method = "dr",
               clustervars = "region_oktmo",
               #bstrap = F,
@@ -219,7 +220,7 @@ ggdid(group_effects)
 "Общая протяженность освещенных частей улиц, проездов, набережных на конец года" %>% get_code()
 "Общая протяженность улиц, проездов, набережных на конец года" %>% get_code()
 
-municipalities["t8006003/t8006007"] <- municipalities$t8006003 / municipalities$t8006007
+big_cities["t8006003/t8006007"] <- big_cities$t8006003 / big_cities$t8006007
 
 y_id <- "t8006003"
 x_fm <- ~ 1 + t8042018_kfs199_okved0
@@ -230,7 +231,7 @@ out <- att_gt(yname = y_id,
               idname = "oktmo",
               tname = "year",
               xformla = x_fm,
-              data = municipalities,
+              data = big_cities,
               est_method = "dr",
               clustervars = "region_oktmo"
 )
@@ -262,7 +263,7 @@ out <- att_gt(yname = y_id,
               idname = "oktmo",
               tname = "year",
               xformla = x_fm,
-              data = municipalities,
+              data = big_cities,
               est_method = "dr",
               clustervars = "region_oktmo"
 )
@@ -293,7 +294,7 @@ out <- att_gt(yname = y_id,
               idname = "oktmo",
               tname = "year",
               xformla = x_fm,
-              data = municipalities,
+              data = big_cities,
               est_method = "dr",
               clustervars = "region_oktmo"
 )
@@ -324,7 +325,7 @@ out <- att_gt(yname = y_id,
               idname = "oktmo",
               tname = "year",
               xformla = x_fm,
-              data = municipalities,
+              data = big_cities,
               est_method = "dr",
               clustervars = "region_oktmo"
 )

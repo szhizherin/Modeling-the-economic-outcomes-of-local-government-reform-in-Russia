@@ -34,7 +34,7 @@ data$oktmo <- join_oktmo
 
 municipalities <- read_csv("final_data/municipalities.csv") %>% 
   select(-c(1)) %>% 
-  select(-c(mun_type, municipality, oktmo_munr, rayon, region, model))
+  select(-c(mun_type, municipality, oktmo_munr, rayon, region))
 
 
 big_cities <- data %>% 

@@ -18,22 +18,12 @@ library(tidyr)
 big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
 BDMO_id_name <- read_csv("intermediate_data/BDMO_id_name.csv") %>% select(-c(1))
 
+big_cities <- big_cities %>% filter(!is.na(treatment))
 
 get_code <- function(var_name) {
   var_id <- (BDMO_id_name %>% filter(name == var_name))$id[1]
   return(var_id)
 }
-
-
-
-structure <- read_csv("raw_data/Krupnie_goroda-RF_1985-2019_187_09.12.21/structure.csv")
-tt <- big_cities %>% filter(!is.na(treatment))
-tt <- big_cities[big_cities %>% is.na() %>% colSums() < 300]
-tt %>% is.na() %>% colSums()
-# с долей водопроводной сети, нуждающейся в замене должно норм получиться
-
-
-
 
 
 y_names <- c(# "Общий объем расходов бюджета муниципального образования|||t8313001|||Всего",
@@ -171,7 +161,7 @@ big_cities["t8008007/t8008025"] <- big_cities$t8008007 / big_cities$t8008025
 big_cities["t8006003/t8006007"] <- big_cities$t8006003 / big_cities$t8006007
 
 
-y_id <- "t8313004_c"
+y_id <- "t8013002_1_c"
 
 
 x_fm <- ~ 1 + t8042018_kfs199_okved0 + t8045002_21_c + t8045002_26_c + t8045002_27_c +
@@ -184,6 +174,8 @@ x_fm <- ~ 1 + t8042018_kfs199_okved0 + t8112013
 x_fm <- ~ 1 + t8042018_kfs199_okved0 + mun_type
 x_fm <- ~ 1 + t8042018_kfs199_okved0
 x_fm <- ~ 1
+
+x_fm <- ~ 1 + wage + workers
 
 out <- att_gt(yname = y_id,
               gname = "first.treat",

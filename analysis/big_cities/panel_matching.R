@@ -1,4 +1,4 @@
-# Purpose: estimate staggered adoption models on big_cities data
+# Purpose: estimate panel matching models on big_cities data
 # Inputs:  intermediate_data/BDMO_id_name.csv
 #          final_data/big_cities.csv
 # Outputs: -
@@ -7,7 +7,6 @@
 
 
 library(dplyr)
-library(plm)
 library(PanelMatch)
 library(readr)
 library(tidyr)
@@ -153,6 +152,7 @@ big_cities$t8013002_229_c <- big_cities$t8013002_229 * big_cities$index
 big_cities$t8013002_234_c <- big_cities$t8013002_234 * big_cities$index
 big_cities$log_population <- log(big_cities$population)
 big_cities$log_wage <- log(big_cities$wage)
+big_cities["t8008008/t8008007"] <- big_cities$t8008008 / big_cities$t8008007
 
 
 # TODO: переписать баланс ковариатов для этих данных, возможно в EDA
@@ -361,7 +361,7 @@ PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo",
                          treatment = "treatment", refinement.method = "ps.weight", 
                          data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
                          covs.formula = X_formula,
-                         qoi = "att" , outcome.var = y_var, lead = 1:5,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4,
                          forbid.treatment.reversal = TRUE)
 
 PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
@@ -399,6 +399,689 @@ get_covariate_balance(PM.results$att, data,
 
 
 ################################################################################
+
+y_var <- "volume_electr_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+
+# PSW
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# PSM
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.match", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:5, # тоже не особо, но динамика восходящая
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "volume_manufact_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+
+# PSW
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# PSM
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.match", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:5, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "volume_manufact_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+
+# PSW
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# PSM
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.match", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:5, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "t8013002_1_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+# PSW
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:5, # нет эффекта, но точечные оценки отрицательные
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# PSM
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.match", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:5, # нет эффекта, но точечные оценки отрицательные
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "t8013002_212_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+# PSW
+PM.results <- PanelMatch(lag = 4, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:6, # нет эффекта, но точечные оценки отрицательные
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# PSM
+PM.results <- PanelMatch(lag = 4, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.match", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:6, # нет эффекта, плохой баланс ковариатов
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "t8013002_220_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+# PSW
+PM.results <- PanelMatch(lag = 3, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:6, # эффект значимый отрицательный для почти всех лидов на 0.95; на 0.99 незначимо, но по точечным оценкам видно, что эффект, похоже, был, лиды 1:6 или 1:4 + есть значимость на 0.95 для конкретных лидов (например, 4); эффект остается значим при измененнии числа лагов с 5 на 3
+                         forbid.treatment.reversal = TRUE)
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 5000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+PC.results <- placeboTest(PM.results, data.in = data, lag.in = 4, number.iterations = 1000, 
+                          confidence.level = 0.95, plot = TRUE) # placebo.test = TRUE
+plot(PC.results)
+
+
+# PSM
+PM.results <- PanelMatch(lag = 4, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.match", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:6, # нет эффекта, плохой баланс ковариатов
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# matching
+PM.results <- PanelMatch(lag = 4, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "mahalanobis", 
+                         data = data, match.missing = TRUE, size.match = 20,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # нет эффекта, плохой баланс ковариатов
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "t8013002_221_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+# PSW
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # эффекта нет
+                         forbid.treatment.reversal = TRUE)
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 5000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+PC.results <- placeboTest(PM.results, data.in = data, lag.in = 4, number.iterations = 1000, 
+                          confidence.level = 0.95, plot = TRUE) # placebo.test = TRUE
+plot(PC.results)
+
+
+# PSM
+PM.results <- PanelMatch(lag = 4, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.match", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:6, # нет эффекта, плохой баланс ковариатов
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# matching
+PM.results <- PanelMatch(lag = 4, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "mahalanobis", 
+                         data = data, match.missing = TRUE, size.match = 20,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "t8013002_229_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+# PSW
+PM.results <- PanelMatch(lag = 3, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # есть знаимый отрицательный эффект, но он чувствителен к числу лидов и лагов (есть при 5)
+                         forbid.treatment.reversal = TRUE)
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 5000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+PC.results <- placeboTest(PM.results, data.in = data, lag.in = 4, number.iterations = 1000, 
+                          confidence.level = 0.95, plot = TRUE) # placebo.test = TRUE
+plot(PC.results)
+
+
+# matching
+PM.results <- PanelMatch(lag = 2, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "mahalanobis", 
+                         data = data, match.missing = TRUE, size.match = 10,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "t8013002_234_c"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+# PSW
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 5000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+PC.results <- placeboTest(PM.results, data.in = data, lag.in = 4, number.iterations = 1000, 
+                          confidence.level = 0.95, plot = TRUE) # placebo.test = TRUE
+plot(PC.results)
+
+
+# matching
+PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "mahalanobis", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:4, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+y_var <- "t8008008/t8008007"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+data$year <- data$year %>% as.integer()
+data$oktmo <- data$oktmo %>% as.integer()
+
+data %>% is.na() %>% sum()
+
+X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
+  living_space + n_companies + pop_work + log_population + retail_c + log_wage +
+  workers + t8006003
+
+
+# PSW
+PM.results <- PanelMatch(lag = 3, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "ps.weight", 
+                         data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:5, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
+                            number.iterations = 5000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+PC.results <- placeboTest(PM.results, data.in = data, lag.in = 4, number.iterations = 1000, 
+                          confidence.level = 0.95, plot = TRUE) # placebo.test = TRUE
+plot(PC.results)
+
+
+# matching
+PM.results <- PanelMatch(lag = 3, time.id = "year", unit.id = "oktmo", 
+                         treatment = "treatment", refinement.method = "mahalanobis", 
+                         data = data, match.missing = TRUE, size.match = 5,
+                         covs.formula = X_formula,
+                         qoi = "att" , outcome.var = y_var, lead = 1:5, # нет эффекта
+                         forbid.treatment.reversal = TRUE)
+
+PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
+                            number.iterations = 1000, confidence.level = 0.95)
+PE.results %>% summary()
+plot(PE.results)
+
+
+# баланс ковариатов
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2),
+                      use.equal.weights = T) # было
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars, 
+                      plot = T, ylim = c(-2,2)) # стало
+
+get_covariate_balance(PM.results$att, data, 
+                      covariates = cov_vars)
+
+
+################################################################################
+
+
+
+
+
+
+
 
 
 

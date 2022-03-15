@@ -1,70 +1,234 @@
-# Семен Жижерин 402
+# Purpose: estimate synthetic control models on big_cities data
+# Inputs:  intermediate_data/BDMO_id_name.csv
+#          final_data/big_cities.csv
+# Outputs: -
 
 
 
 
 library(dplyr)
-library(tidysynth)
+library(plm)
 library(readr)
-library(stargazer)
+library(tidysynth)
+library(tidyr)
 
 
 
 
-#########################################################################
-########################         Данные          ########################
-#########################################################################
+big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
+big_cities <- big_cities %>% 
+  mutate(treatment_status = case_when(model == "Избираемый мэр" ~ 0,
+                                      model == "Сити-менеджер" ~ 1,
+                                      model == "Назначаемый мэр" ~ 2))
+big_cities <- big_cities %>% filter(!is.na(treatment_status))
 
 
-data <- read_csv("HA3_2021_data.csv") %>% 
-  arrange(Country, Year) %>% 
-  as.data.frame() %>% 
-  rename(Real_GDP = `Real GDP`)
-
-
-#########################################################################
-########################       Задание 2.1       ########################
-#########################################################################
-
-
-Cabo_Verde_data <- data %>% 
-  filter(!(Country %in% c("Mozambique", "Nigeria", "Rwanda", "Uganda", "Senegal", "Tanzania")))
-
-Cabo_Verde <- Cabo_Verde_data %>% 
+get_group <- function(treatment_history) {
+  # 0 ~ "Избираемый мэр"
+  # 1 ~ "Сити-менеджер"
+  # 2 ~ "Назаначаемый мэр"
+  # the expected behavior would be either 0 -> 2 or 0 -> 1 -> 2 or 0 -> 1 or
+  # 1 -> 2 or constant treatment status
   
-  synthetic_control(outcome = Real_GDP, 
-                    unit = Country, 
-                    time = Year, 
-                    i_unit = "Cabo Verde", 
-                    i_time = 2007, 
+  if (!((treatment_history == cummax(treatment_history)) %>% all())) {
+    return("unexpected")
+  }
+  
+  if ((c(0, 1, 2) %in% treatment_history %>% all())) {
+    return("0 -> 1 -> 2")
+  }
+  else if ((c(0, 1) %in% treatment_history %>% all())) {
+    return("0 -> 1")
+  } 
+  else if ((c(0, 2) %in% treatment_history %>% all())) {
+    return("0 -> 2")
+  } 
+  else if ((c(1, 2) %in% treatment_history %>% all())) {
+    return("1 -> 2")
+  }
+  else if ((treatment_history == rep(0, length(treatment_history))) %>% all()) {
+    return("0")
+  }
+  else if ((treatment_history == rep(1, length(treatment_history))) %>% all()) {
+    return("1")
+  }
+  else if ((treatment_history == rep(2, length(treatment_history))) %>% all()) {
+    return("2")
+  }
+}
+
+
+big_cities <- big_cities %>% 
+  group_by(oktmo) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+
+# "c" stands for inflation- and regional prices-corrected
+big_cities$catering_c <- big_cities$catering * big_cities$index
+big_cities$construction_c <- big_cities$construction * big_cities$index
+big_cities$pension_c <- big_cities$pension * big_cities$index
+big_cities$retail_c <- big_cities$retail * big_cities$index
+big_cities$wage_c <- big_cities$wage * big_cities$index
+big_cities$investment_c <- big_cities$investment * big_cities$index
+big_cities$volume_electr_c <- big_cities$volume_electr * big_cities$index
+big_cities$volume_manufact_c <- big_cities$volume_manufact * big_cities$index
+big_cities$t8013002_1_c <- big_cities$t8013002_1 * big_cities$index
+big_cities$t8013002_212_c <- big_cities$t8013002_212 * big_cities$index
+big_cities$t8013002_220_c <- big_cities$t8013002_220 * big_cities$index
+big_cities$t8013002_221_c <- big_cities$t8013002_221 * big_cities$index
+big_cities$t8013002_229_c <- big_cities$t8013002_229 * big_cities$index
+big_cities$t8013002_234_c <- big_cities$t8013002_234 * big_cities$index
+big_cities$log_population <- log(big_cities$population)
+big_cities$log_wage <- log(big_cities$wage)
+big_cities["t8008008/t8008007"] <- big_cities$t8008008 / big_cities$t8008007
+
+
+
+# TODO: move to EDA
+big_cities %>% select(municipality, year, treatment_status, model, group) %>% 
+  filter(group == "0 -> 1") %>% View()
+# Калининград и Пятигорск - примеры обратного перехода
+# Березники и Миасский - тоже, в каком-то смысле
+# эти 4 - пожалуй, самые интересные кейсы
+# Астрахань, Вологда - длинный претритмент
+
+
+library(ggplot2)
+ggplot(big_cities, aes(x = group)) +
+  geom_bar()
+
+never_treated <- (big_cities %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique()
+# !(settlement %in% c("Воркута", "Ангарск", "Киселевск", "Новотроицк"))
+
+
+################################################################################
+
+y_var <- "t8013002_1_c" # есть очевидные проблемы с распознанием названия через y_var в селекте и в synthetic_control
+# добавить средний ауткам как предиктор (ну или за несколько лет)
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+
+Kaliningrad_data <- big_cities %>% 
+  select(c("settlement", "year", "treatment", y_var, all_of(cov_vars))) %>%
+  filter(settlement %in% c("Калининград", all_of(never_treated))) %>%
+  filter(!is.na(t8013002_1_c)) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+Kaliningrad_data %>% is.na() %>% sum()
+
+Kaliningrad_data <- make.pbalanced(Kaliningrad_data, balance.type = "shared.individuals")
+# "shared.individuals" - выбросить страны, для которых не хватает лет
+# "shared.times" - выбросить года, для которых не хватает стран
+
+Kaliningrad <- Kaliningrad_data %>% 
+  
+  synthetic_control(outcome = t8013002_1_c, 
+                    unit = settlement, 
+                    time = year, 
+                    i_unit = "Калининград", 
+                    i_time = 2012, 
                     generate_placebos = T 
   ) %>%
   
-  generate_predictor(time_window = 1992:2007,
-                     investment_rate = mean(`investment rate`),
-                     economic_openness = mean(openness),
-                     population_density = mean(`population density`),
-                     share_of_agriculture = mean(`share of agriculture`),
-                     share_of_industry = mean(`share of industry`),
-                     secondary_school = mean(`sec school enr rate`),
-                     tertiary_school = mean(`tert school enr rate`),
-                     abs_lat = mean(abs(latitude))
+  generate_predictor(time_window = 2007:2012,
+                     build_flat = mean(build_flat, na.rm = T),
+                     catering_c = mean(catering_c, na.rm = T),
+                     construction_c = mean(construction_c, na.rm = T),
+                     doctors_per10 = mean(doctors_per10, na.rm = T),
+                     living_space = mean(living_space, na.rm = T),
+                     n_companies = mean(n_companies, na.rm = T),
+                     pop_work = mean(pop_work, na.rm = T),
+                     log_population = mean(log_population, na.rm = T),
+                     retail_c = mean(retail_c, na.rm = T),
+                     log_wage = mean(log_wage, na.rm = T),
+                     workers = mean(workers, na.rm = T),
+                     streets_with_light = mean(t8006003, na.rm = T),
+                     
   ) %>%
   
-  generate_predictor(time_window = 1995,
-                     GDP_1995 = Real_GDP) %>% 
+  generate_predictor(time_window = 2007,
+                     investment_2007 = t8013002_1_c) %>% 
   
-  generate_predictor(time_window = 2000,
-                     GDP_2000 = Real_GDP) %>% 
+  generate_predictor(time_window = 2010,
+                     investment_2010 = t8013002_1_c) %>% 
   
-  generate_predictor(time_window = 2005,
-                     GDP_2005 = Real_GDP) %>% 
+  generate_predictor(time_window = 2012,
+                     investment_2012 = t8013002_1_c) %>%
   
-  generate_weights(optimization_window = 1992:2007) %>% 
+  generate_weights(optimization_window = 2007:2012) %>% 
   
   generate_control()
 
-Cabo_Verde %>% plot_trends()
+Kaliningrad %>% plot_trends()
+Kaliningrad %>% plot_differences()
+Kaliningrad %>% plot_weights()
+
+
+################################################################################
+
+y_var <- "t8013002_1_c" # есть очевидные проблемы с распознанием названия через y_var в селекте и в synthetic_control
+# добавить средний ауткам как предиктор (ну или за несколько лет)
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+
+Kaliningrad_data <- big_cities %>% 
+  select(c("settlement", "year", "treatment", y_var, all_of(cov_vars))) %>%
+  filter(settlement %in% c("Пятигорск", all_of(never_treated))) %>%
+  filter(!is.na(t8013002_1_c)) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+Kaliningrad_data %>% is.na() %>% sum()
+
+Kaliningrad_data <- make.pbalanced(Kaliningrad_data, balance.type = "shared.individuals")
+# "shared.individuals" - выбросить страны, для которых не хватает лет
+# "shared.times" - выбросить года, для которых не хватает стран
+
+Kaliningrad <- Kaliningrad_data %>% 
+  
+  synthetic_control(outcome = t8013002_1_c, 
+                    unit = settlement, 
+                    time = year, 
+                    i_unit = "Пятигорск", 
+                    i_time = 2010, 
+                    generate_placebos = T 
+  ) %>%
+  
+  generate_predictor(time_window = 2006:2010,
+                     build_flat = mean(build_flat, na.rm = T),
+                     catering_c = mean(catering_c, na.rm = T),
+                     construction_c = mean(construction_c, na.rm = T),
+                     doctors_per10 = mean(doctors_per10, na.rm = T),
+                     living_space = mean(living_space, na.rm = T),
+                     n_companies = mean(n_companies, na.rm = T),
+                     pop_work = mean(pop_work, na.rm = T),
+                     log_population = mean(log_population, na.rm = T),
+                     retail_c = mean(retail_c, na.rm = T),
+                     log_wage = mean(log_wage, na.rm = T),
+                     workers = mean(workers, na.rm = T),
+                     streets_with_light = mean(t8006003, na.rm = T),
+                     
+  ) %>%
+  
+  generate_predictor(time_window = 2006,
+                     investment_2007 = t8013002_1_c) %>% 
+  
+  generate_predictor(time_window = 2009,
+                     investment_2010 = t8013002_1_c) %>% 
+  
+  generate_weights(optimization_window = 2006:2010) %>% 
+  
+  generate_control()
+
+Kaliningrad %>% plot_trends()
+Kaliningrad %>% plot_differences()
+Kaliningrad %>% plot_weights()
+
+
+
+
 
 
 Nigeria_data <- data %>% 

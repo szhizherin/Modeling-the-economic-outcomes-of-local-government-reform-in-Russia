@@ -66,6 +66,7 @@ big_cities <- big_cities %>%
 big_cities %>% select(municipality, year, treatment_status, model, group) %>% 
   filter(group == "unexpected") %>% View() # находка для синтетического контроля
 
+
 library(ggplot2)
 ggplot(big_cities, aes(x = group)) +
   geom_bar()
@@ -347,13 +348,6 @@ data %>% is.na() %>% sum()
 X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
   living_space + n_companies + pop_work + log_population + retail_c + log_wage +
   workers + t8006003
-
-
-DisplayTreatment(unit.id = "oktmo",
-                 time.id = "year", legend.position = "none",
-                 xlab = "year", ylab = "ОКТМО",
-                 treatment = "treatment", data = data, 
-                 hide.y.axis.label = F)
 
 
 # PSW

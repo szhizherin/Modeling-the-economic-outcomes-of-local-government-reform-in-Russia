@@ -84,8 +84,8 @@ big_cities["t8008008_t8008007"] <- big_cities$t8008008 / big_cities$t8008007
 
 
 # TODO: move to EDA
-big_cities %>% select(municipality, year, treatment_status, model, group) %>% 
-  filter(group == "0 -> 1") %>% View()
+big_cities %>% select(settlement, year, treatment_status, model, group) %>% 
+  filter(group == "unexpected") %>% View()
 # Калининград и Пятигорск - примеры обратного перехода
 # Березники и Миасский - тоже, в каком-то смысле
 # эти 4 - пожалуй, самые интересные кейсы

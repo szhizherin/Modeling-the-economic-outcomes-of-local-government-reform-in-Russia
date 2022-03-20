@@ -41,6 +41,7 @@ big_cities <- data %>%
   merge(municipalities, by = c("oktmo", "year"), all.x = T) %>% # left join
   arrange(oktmo, year)
 
+big_cities <- big_cities %>% filter(region != "Республика Крым")
 
 big_cities %>% write.csv("final_data/big_cities.csv", 
                          fileEncoding = "UTF-8")

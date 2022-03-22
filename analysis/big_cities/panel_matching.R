@@ -63,7 +63,7 @@ big_cities <- big_cities %>%
 
 
 # TODO: move to EDA
-big_cities %>% select(municipality, year, treatment_status, model, group) %>% 
+big_cities %>% select(settlement, year, treatment_status, model, group) %>% 
   filter(group == "unexpected") %>% View() # находка для синтетического контроля
 
 
@@ -187,7 +187,7 @@ wage_gap %>%
      col.align = c("left", rep("center", 5)))
 
 
-######################## total effects ######################## 
+################################################################################ 
 
 y_var <- "investment_c"
 cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
@@ -351,17 +351,18 @@ X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 +
 
 
 # PSW
-PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+PM.results <- PanelMatch(lag = 3, time.id = "year", unit.id = "oktmo", 
                          treatment = "treatment", refinement.method = "ps.weight", 
                          data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
                          covs.formula = X_formula,
-                         qoi = "att" , outcome.var = y_var, lead = 1:4,
+                         qoi = "att" , outcome.var = y_var, lead = 1:6,
                          forbid.treatment.reversal = TRUE)
 
 PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
                             number.iterations = 5000, confidence.level = 0.95) # есть значимость в t+4 на 95 и 99 %
 PE.results %>% summary()
 plot(PE.results)
+PM.results$att %>% length() # число treated городов
 
 
 # PSM
@@ -376,7 +377,6 @@ PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap",
                             number.iterations = 1000, confidence.level = 0.95) # мэтчинг тоже подтверждает, но баланс ковариатов хуже
 PE.results %>% summary()
 plot(PE.results)
-
 
 # баланс ковариатов
 get_covariate_balance(PM.results$att, data, 
@@ -712,19 +712,22 @@ get_covariate_balance(PM.results$att, data,
 
 ################################################################################
 
+# TODO: посмотреть на qoi = "art"
 y_var <- "t8013002_220_c"
 cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
               "living_space", "n_companies", "pop_work", "log_population", 
               "retail_c", "log_wage", "workers", "t8006003")
 
 data <- big_cities %>% 
-  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  select(c("oktmo", "year", "treatment", all_of(y_var), all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
 
 data$year <- data$year %>% as.integer()
 data$oktmo <- data$oktmo %>% as.integer()
 
-data %>% is.na() %>% sum()
+# total number of treated
+(data %>% group_by(oktmo) %>% filter(sum(treatment) > 0) %>% ungroup())$oktmo %>% unique() %>% length()
+
 
 X_formula <- ~ build_flat + catering_c + construction_c + doctors_per10 + 
   living_space + n_companies + pop_work + log_population + retail_c + log_wage +
@@ -746,6 +749,9 @@ plot(PE.results)
 PC.results <- placeboTest(PM.results, data.in = data, lag.in = 4, number.iterations = 1000, 
                           confidence.level = 0.95, plot = TRUE) # placebo.test = TRUE
 plot(PC.results)
+
+PM.results$att %>% length() # число treated городов
+
 
 
 # PSM

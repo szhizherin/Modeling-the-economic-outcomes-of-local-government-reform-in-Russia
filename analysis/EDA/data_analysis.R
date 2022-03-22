@@ -1,6 +1,7 @@
 library(tidyverse)
 library(hrbrthemes)
 library(did)
+library(data.table)
 
 
 data <- read_csv("raw_data/bumo_models_30122018/data.csv")
@@ -251,6 +252,36 @@ ggdid(es)
 
 group_effects <- aggte(out, type = "group")
 group_effects %>% summary()
+
+
+#########################################################################
+########################       big_cities        ########################
+#########################################################################
+
+
+big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
+big_cities <- big_cities %>% 
+  mutate(treatment_status = case_when(model == "Избираемый мэр" ~ 0,
+                                      model == "Сити-менеджер" ~ 1,
+                                      model == "Назначаемый мэр" ~ 2))
+big_cities <- big_cities %>% filter(!is.na(treatment_status)) %>% as.data.table()
+
+
+data_nona <- big_cities
+p <- data_nona %>%
+  ggplot(aes(x=year, fill=model)) +
+  geom_bar(position = 'stack') +
+  ggtitle("Динамика формы управления") +
+  scale_fill_manual(values=c("#69b3a2", "#404080", "grey")) +
+  theme_ipsum() +
+  theme(
+    plot.title = element_text(size=15),
+    axis.text.x = element_text(angle = 90, vjust = 0.5)
+  ) +
+  scale_x_continuous("Год", labels = as.character(data_nona$year), breaks = data_nona$year) +
+  labs(fill="")
+p
+
 
 
 

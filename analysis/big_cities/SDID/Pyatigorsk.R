@@ -13,6 +13,7 @@ library(tidyr)
 
 
 
+
 big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
 big_cities <- big_cities %>% 
   mutate(treatment_status = case_when(model == "Избираемый мэр" ~ 0,
@@ -82,17 +83,17 @@ big_cities["t8008008_t8008007"] <- big_cities$t8008008 / big_cities$t8008007
 
 ################################################################################
 
-y_var <- "t8013002_1_c" # значимо
-city <- "Калининград"
+y_var <- "t8013002_1_c" # не значимо, очень хорошая подгонка
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique() # , "2", "1 -> 2"
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique() # , "2", "1 -> 2"
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -132,12 +133,12 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
-y_var <- "t8013002_212_c" 
-city <- "Калининград"
+y_var <- "t8013002_212_c" # не значимо, очень хорошая подгонка
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -183,11 +184,11 @@ synthdid_units_plot(estimates, se.method='placebo')
 ################################################################################
 
 y_var <- "t8013002_220_c" 
-city <- "Калининград"
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -233,11 +234,11 @@ synthdid_units_plot(estimates, se.method='placebo')
 ################################################################################
 
 y_var <- "t8013002_221_c" 
-city <- "Калининград"
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -282,17 +283,17 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
-y_var <- "t8013002_229_c" 
-city <- "Калининград"
+y_var <- "t8013002_229_c" # не значимо, схожесть необычных траекторий после
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique()
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -333,16 +334,16 @@ synthdid_units_plot(estimates, se.method='placebo')
 ################################################################################
 
 y_var <- "t8013002_234_c" 
-city <- "Калининград"
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique()
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -383,11 +384,11 @@ synthdid_units_plot(estimates, se.method='placebo')
 ################################################################################
 
 y_var <- "invest_budg" 
-city <- "Калининград"
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -432,12 +433,12 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
-y_var <- "invest_fed"
-city <- "Калининград"
+y_var <- "invest_fed" # хорошая подгонка, интересно, что эффект незначим
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -482,12 +483,12 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
-y_var <- "investment_c" # значимо, см. график с тремя методами
-city <- "Калининград"
+y_var <- "investment_c" # не значимо, неплохая подгонка
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -516,7 +517,7 @@ se = sqrt(vcov(tau.hat, method='placebo'))
 sprintf('point estimate: %1.2f', tau.hat)
 sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
 
-plot(tau.sc, se.method='placebo')
+plot(tau.hat, se.method='placebo')
 synthdid_units_plot(tau.hat, se.method='placebo')
 plot(tau.hat, overlay=1,  se.method='placebo')
 plot(tau.hat, overlay=.8, se.method='placebo')
@@ -533,11 +534,11 @@ synthdid_units_plot(estimates, se.method='placebo')
 ################################################################################
 
 y_var <- "volume_electr_c"
-city <- "Калининград"
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -583,11 +584,11 @@ synthdid_units_plot(estimates, se.method='placebo')
 ################################################################################
 
 y_var <- "volume_manufact_c" 
-city <- "Калининград"
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -632,12 +633,12 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
-y_var <- "t8008008_t8008007" # вообще ничего не поменялось (плацебо)
-city <- "Калининград"
+y_var <- "t8008008_t8008007" # по Пятигорску нет данных
+city <- "Пятигорск"
 
 data <- big_cities %>% 
   select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
-  filter(year %in% 2007:2016)
+  filter(year %in% 2006:2014)
 
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()

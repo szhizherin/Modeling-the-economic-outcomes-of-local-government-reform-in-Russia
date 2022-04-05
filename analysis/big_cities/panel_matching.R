@@ -71,6 +71,9 @@ library(ggplot2)
 ggplot(big_cities, aes(x = group)) +
   geom_bar()
 
+big_cities %>% group_by(region) %>% summarise(n = n()) %>% View()
+big_cities %>% filter(region == "Московская область") %>% View()
+
 structure <- read_csv("raw_data/Krupnie_goroda-RF_1985-2019_187_09.12.21/structure.csv")
 big_cities %>% is.na() %>% colSums()
 ########## переменные, в которых не слишком много пропусков (< 400) ############
@@ -153,38 +156,40 @@ big_cities$t8013002_229_c <- big_cities$t8013002_229 * big_cities$index
 big_cities$t8013002_234_c <- big_cities$t8013002_234 * big_cities$index
 big_cities$log_population <- log(big_cities$population)
 big_cities$log_wage <- log(big_cities$wage)
-big_cities["t8008008/t8008007"] <- big_cities$t8008008 / big_cities$t8008007
+big_cities["t8008008_t8008007"] <- big_cities$t8008008 / big_cities$t8008007 # доля водопроводной сети, нуждающейся в замене
+big_cities["t8008025_t8008008"] <- big_cities$t8008025 / big_cities$t8008008 # доля отремонтированной от нуждающейся
+big_cities["t8006003_t8006007"] <- big_cities$t8008025 / big_cities$t8008008 # доля освещенных частей улиц
+big_cities$t8013001_1_c <- big_cities$t8013001_1 * big_cities$index
+big_cities$t8013001_89_c <- big_cities$t8013001_89 * big_cities$index
+big_cities["t8013001_89_t8013001_1"] <- big_cities$t8013001_89 / big_cities$t8013001_1 # доля собственных доходов
+big_cities$t8013001_34_c <- big_cities$t8013001_34 * big_cities$index
+big_cities$t8013001_36_c <- big_cities$t8013001_36 * big_cities$index
+big_cities$t8013001_27_c <- big_cities$t8013001_27 * big_cities$index
+big_cities["t8013001_34_t8013001_1"] <- big_cities$t8013001_34 / big_cities$t8013001_1 # доля безвозмездных поступлений в доходах
+big_cities$log_per_capita_assets <- log(big_cities$assets / big_cities$population)
+
+
+non_competitive_elections <- c("Республика Адыгея", "Республика Дагестан", 
+                               "Республика Ингушетия", 
+                               "Кабардино-Балкарская республика",
+                               "Карачаево-Черкесская республика", 
+                               "Республика Северная Осетия - Алания",
+                               "Чеченская республика", 
+                               "Астраханская область",
+                               "Брянская область", "Республика Башкортостан", 
+                               "Республика Калмыкия", "Кемеровская область",
+                               "Чукотский автономный округ", 
+                               "Республика Мордовия", "Саратовская область",
+                               "Орловская область", "Тамбовская область",
+                               "Республика Татарстан", "Тульская область",
+                               "Республика Тыва", "Тюменская область",
+                               "Республика Саха (Якутия)",
+                               "Ямало-Ненецкий автономный округ")
+
+big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
 
 
 # TODO: переписать баланс ковариатов для этих данных, возможно в EDA
-wage_gap %>% 
-  select(SMSA_central, AFQT2, self_conf, education, years, woman, black, 
-         hispanic, fam_size, married, union, promotion, risk, group, 
-         size_of_firm, HGT_father, HGT_mother) %>% 
-  filter(group %in% c(2, 3)) %>% 
-  mutate(group = replace(group, group == 2, "Stayed")) %>% 
-  mutate(group = replace(group, group == 3, "Moved")) %>% 
-  st(group = "group", summ = c('mean(x)', 'notNA(x)'),
-     summ.names = list(c('Mean','Observations')),
-     digits = 2, labels = T, group.test = list(digits = 2),
-     title = "Баланс ковариатов",
-     col.align = c("left", rep("center", 5)))
-
-
-# разница в характеристиках до тритмента (всё равно значимые различия)
-wage_gap %>% 
-  select(SMSA_central, AFQT2, self_conf, education, years, woman, black, 
-         hispanic, fam_size, married, union, promotion, risk, group, 
-         size_of_firm, HGT_father, HGT_mother) %>% 
-  filter(group %in% c(2, 3)) %>% 
-  filter(SMSA_central == 0) %>% 
-  mutate(group = replace(group, group == 2, "Stayed")) %>% 
-  mutate(group = replace(group, group == 3, "Moved")) %>% 
-  st(group = "group", summ = c('mean(x)', 'notNA(x)'),
-     summ.names = list(c('Mean','Observations')),
-     digits = 2, labels = T, group.test = list(digits = 2),
-     title = "Баланс ковариатов",
-     col.align = c("left", rep("center", 5)))
 
 
 ################################################################################ 
@@ -195,7 +200,7 @@ cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10",
               "retail_c", "log_wage", "workers", "t8006003")
 
 data <- big_cities %>% 
-  select(c("oktmo", "year", "treatment", y_var, all_of(cov_vars))) %>% 
+  select(c("oktmo", "year", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
 
 data$year <- data$year %>% as.integer()
@@ -216,17 +221,19 @@ DisplayTreatment(unit.id = "oktmo",
 
 
 # PSW
-PM.results <- PanelMatch(lag = 5, time.id = "year", unit.id = "oktmo", 
+PM.results <- PanelMatch(lag = 3, time.id = "year", unit.id = "oktmo", 
                          treatment = "treatment", refinement.method = "ps.weight", 
                          data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
                          covs.formula = X_formula,
-                         qoi = "att" , outcome.var = y_var, lead = 1:5, # 1:5 - почти значимость t+4
+                         qoi = "att" , outcome.var = y_var, lead = 1, # 1:5 - почти значимость t+4
                          forbid.treatment.reversal = TRUE)
-
+PM.results$att %>% length() # число treated городов
 PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
-                            number.iterations = 5000, confidence.level = 0.95)
+                            number.iterations = 5000, confidence.level = 0.95,
+                            moderator = "competitive")
 PE.results %>% summary()
-plot(PE.results)
+plot(PE.results$X0)
+plot(PE.results$X1)
 
 
 # PSM
@@ -355,14 +362,13 @@ PM.results <- PanelMatch(lag = 3, time.id = "year", unit.id = "oktmo",
                          treatment = "treatment", refinement.method = "ps.weight", 
                          data = data, match.missing = TRUE, # size.match здесь ни на что не влияет
                          covs.formula = X_formula,
-                         qoi = "att" , outcome.var = y_var, lead = 1:6,
+                         qoi = "att" , outcome.var = y_var, lead = 4:5,
                          forbid.treatment.reversal = TRUE)
-
+PM.results$att %>% length() # число treated городов
 PE.results <- PanelEstimate(sets = PM.results, data, se.method = "bootstrap", 
                             number.iterations = 5000, confidence.level = 0.95) # есть значимость в t+4 на 95 и 99 %
 PE.results %>% summary()
 plot(PE.results)
-PM.results$att %>% length() # число treated городов
 
 
 # PSM

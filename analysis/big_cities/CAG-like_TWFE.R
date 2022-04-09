@@ -93,33 +93,57 @@ big_cities$t8013001_34_c <- big_cities$t8013001_34 * big_cities$index
 big_cities$t8013001_36_c <- big_cities$t8013001_36 * big_cities$index
 big_cities$t8013001_27_c <- big_cities$t8013001_27 * big_cities$index
 big_cities["t8013001_34_t8013001_1"] <- big_cities$t8013001_34 / big_cities$t8013001_1 # доля безвозмездных поступлений в доходах
+big_cities$log_per_capita_assets <- log(big_cities$assets / big_cities$population)
+big_cities$log_new_housing <- log(big_cities$new_housing)
 
 
+
+non_competitive_elections <- c("Республика Адыгея", "Республика Дагестан", 
+                               "Республика Ингушетия", 
+                               "Кабардино-Балкарская республика",
+                               "Карачаево-Черкесская республика", 
+                               "Республика Северная Осетия - Алания",
+                               "Чеченская республика", 
+                               "Астраханская область",
+                               "Брянская область", "Республика Башкортостан", 
+                               "Республика Калмыкия", "Кемеровская область",
+                               "Чукотский автономный округ", 
+                               "Республика Мордовия", "Саратовская область",
+                               "Орловская область", "Тамбовская область",
+                               "Республика Татарстан", "Тульская область",
+                               "Республика Тыва", "Тюменская область",
+                               "Республика Саха (Якутия)",
+                               "Ямало-Ненецкий автономный округ")
+
+big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
+
+CAG_cov_vars1 <- c("log_population", "log_per_capita_assets", "log_wage",
+                   "share_profitable_firms", "preschool", "preschool_child",
+                   "log_new_housing", "t8006007", "t8011011_0")
+big_cities$preschool_child %>% is.na() %>% sum()
 ################################################################################
 
 
-y_var <- "t8013002_212_c"
-cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
-              "living_space", "n_companies", "pop_work", "log_population", 
-              "retail_c", "log_wage", "workers", "t8006003")
+y_var <- "t8013002_1_c"
+cov_vars <- CAG_cov_vars1
 
 data <- big_cities %>% 
   select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
+           "time_to_treat", "treatment", all_of(y_var), all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
 
-mod_twfe = feols(t8013002_212_c ~ i(time_to_treat, treat, ref = -1) + 
-                   build_flat + catering_c + construction_c + doctors_per10 + 
-                   living_space + n_companies + pop_work + log_population + 
-                   retail_c + log_wage + workers + t8006003 | 
+mod_twfe = feols(t8013002_1_c ~ i(time_to_treat, treat, ref = -1) + 
+                   log_population + log_per_capita_assets + log_wage +
+                   share_profitable_firms + preschool + preschool_child +
+                   log_new_housing + t8006007 + t8011011_0 | 
                    settlement + year, 
                  cluster = ~region, 
                  data = data)
 
-mod_twfe_total = feols(t8013002_212_c ~ treatment +       
-                         build_flat + catering_c + construction_c + doctors_per10 + 
-                         living_space + n_companies + pop_work + log_population + 
-                         retail_c + log_wage + workers + t8006003 |                   
+mod_twfe_total = feols(t8013002_1_c ~ treatment +       
+                         log_population + log_per_capita_assets + log_wage +
+                         share_profitable_firms + preschool + preschool_child +
+                         log_new_housing + t8006007 + t8011011_0 |                   
                          settlement + year,                                           
                        cluster = ~region,                                             
                        data = data)
@@ -129,10 +153,10 @@ iplot(mod_twfe,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (TWFE)')
 
-mod_sa = feols(t8013002_212_c ~ sunab(first.treat, year) + 
-                 build_flat + catering_c + construction_c + doctors_per10 + 
-                 living_space + n_companies + pop_work + log_population + 
-                 retail_c + log_wage + workers + t8006003 | 
+mod_sa = feols(t8013002_1_c ~ sunab(first.treat, year) + 
+                 log_population + log_per_capita_assets + log_wage +
+                 share_profitable_firms + preschool + preschool_child +
+                 log_new_housing + t8006007 + t8011011_0 | 
                  settlement + year,  
                cluster = ~region,  
                data = data)

@@ -123,6 +123,9 @@ big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections
 y_var <- "t8013002_1_c"
 cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
               "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
               "retail_c", "log_wage", "workers", "t8006003",
               "share_profitable_firms", "log_per_capita_assets")
 
@@ -134,7 +137,7 @@ data <- big_cities %>%
 mod_twfe = feols(t8013002_1_c ~ i(time_to_treat, treat, ref = -1) +             ## Key interaction: time × treatment status
                    build_flat + catering_c + construction_c + doctors_per10 + 
                    living_space + n_companies + pop_work + log_population + 
-                   retail_c + log_wage + workers + t8006003 |                   ## Other controls
+                   retail_c + log_wage + workers + t8006003 + share_profitable_firms|                   ## Other controls
                    settlement + year,                                           ## FEs
                  cluster = ~region,                                             ## Clustered SEs
                  data = data)
@@ -142,7 +145,7 @@ mod_twfe = feols(t8013002_1_c ~ i(time_to_treat, treat, ref = -1) +             
 mod_twfe_total = feols(t8013002_1_c ~ treatment +       
                    build_flat + catering_c + construction_c + doctors_per10 + 
                    living_space + n_companies + pop_work + log_population + 
-                   retail_c + log_wage + workers + t8006003 |                   
+                   retail_c + log_wage + workers + t8006003 + share_profitable_firms |                   
                    settlement + year,                                           
                  cluster = ~region,                                             
                  data = data)
@@ -156,20 +159,31 @@ mod_twfe_total = feols(t8013002_1_c ~ treatment +
                        data = data)
 summary(mod_twfe_total)
 
-mod_twfe_total = feols(t8013002_1_c ~ i(treatment, competitive, 0) + treatment +     
+mod_twfe_total = feols(t8013002_1_c ~ i(treatment, competitive, 0) + treatment + 
+                         build_flat + catering_c + construction_c + doctors_per10 + 
+                         living_space + n_companies + pop_work + log_population + 
+                         retail_c + log_wage + workers + t8006003 + 
+                         share_profitable_firms + log_per_capita_assets |                   
+                         settlement + year,                                           
+                       cluster = ~region,                                             
+                       data = data)
+summary(mod_twfe_total) # здесь внезапно 5% значимости тритмента
+
+mod_twfe_total = feols(t8013002_1_c ~ i(treatment, competitive, 0) + treatment + 
                          build_flat + catering_c + construction_c + doctors_per10 + 
                          living_space + n_companies + pop_work + log_population + 
                          retail_c + log_wage + workers + t8006003 |                   
                          settlement + year,                                           
                        cluster = ~region,                                             
                        data = data)
-summary(mod_twfe_total)
+summary(mod_twfe_total) # а здесь нет значимости (с 1837 наблюдениями)
+
 
 iplot(mod_twfe, 
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (TWFE)')
 
-mod_sa = feols(t8013002_1_c ~ sunab(first.treat, year, -1) + 
+mod_sa = feols(t8013002_1_c ~ sunab(first.treat, year, -1) + i(treatment, competitive, 0) +
                  log_population + log_wage + log_per_capita_assets +
                  share_profitable_firms | 
                  settlement + year, 
@@ -180,10 +194,10 @@ iplot(mod_sa,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (TWFE)')
 
-mod_sa = feols(t8013002_1_c ~ sunab(first.treat, year, -1) +                        ## key interaction: time × treatment status
+mod_sa = feols(t8013002_1_c ~ sunab(first.treat, year, -1) #+ i(treatment, competitive, 0) +                     ## key interaction: time × treatment status
                    build_flat + catering_c + construction_c + doctors_per10 + 
                    living_space + n_companies + pop_work + log_population + 
-                   retail_c + log_wage + workers + t8006003 |                   ## Other controls
+                   retail_c + log_wage + workers + t8006003 + share_profitable_firms|                   ## Other controls
                    settlement + year,                                           ## FEs
                  cluster = ~region,                                             ## Clustered SEs
                  data = data)

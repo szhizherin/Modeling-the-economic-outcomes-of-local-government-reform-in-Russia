@@ -155,7 +155,7 @@ big_cities$t8013002_221_c <- big_cities$t8013002_221 * big_cities$index
 big_cities$t8013002_229_c <- big_cities$t8013002_229 * big_cities$index
 big_cities$t8013002_234_c <- big_cities$t8013002_234 * big_cities$index
 big_cities$log_population <- log(big_cities$population)
-big_cities$log_wage <- log(big_cities$wage)
+big_cities$log_wage <- log(big_cities$wage_с)
 big_cities["t8008008_t8008007"] <- big_cities$t8008008 / big_cities$t8008007 # доля водопроводной сети, нуждающейся в замене
 big_cities["t8008025_t8008008"] <- big_cities$t8008025 / big_cities$t8008008 # доля отремонтированной от нуждающейся
 big_cities["t8006003_t8006007"] <- big_cities$t8008025 / big_cities$t8008008 # доля освещенных частей улиц

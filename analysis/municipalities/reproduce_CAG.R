@@ -68,10 +68,6 @@ municipalities <- municipalities %>%
 
 
 # "c" stands for inflation- and regional prices-corrected
-municipalities$catering_c <- municipalities$catering * municipalities$index
-municipalities$construction_c <- municipalities$construction * municipalities$index
-municipalities$pension_c <- municipalities$pension * municipalities$index
-municipalities$retail_c <- municipalities$retail * municipalities$index
 municipalities$wage_c <- municipalities$wage * municipalities$index
 municipalities$investment_c <- municipalities$investment * municipalities$index
 municipalities$volume_electr_c <- municipalities$volume_electr * municipalities$index
@@ -99,8 +95,20 @@ municipalities$log_per_capita_assets <- log(municipalities$assets / municipaliti
 
 
 
-# "log_population", "log_per_capita_assets", "log_wage",
-# "share_profitable_firms", "preschool", "preschool_child",
-# "log_new_housing", "t8006007", "t8011011_0"
+# "log_population", <- t8112013 или t8112027_11
+# "log_per_capita_assets", <- t8045002_0 или t8045002_21 t8045002_26 t8045002_27
+# "log_wage", <- avg_wage
+# "share_profitable_firms", 
+# "school", <- t8015001
+# "school_child", <- t8015002
+# "log_new_housing", <- t8010001
+# "t8006007", 
+# "t8011011_0"
+
+
+#
+#
+#
+
 
 

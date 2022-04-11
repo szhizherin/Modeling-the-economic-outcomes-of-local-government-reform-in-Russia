@@ -75,15 +75,25 @@ big_cities$wage_c <- big_cities$wage * big_cities$index
 big_cities$investment_c <- big_cities$investment * big_cities$index
 big_cities$volume_electr_c <- big_cities$volume_electr * big_cities$index
 big_cities$volume_manufact_c <- big_cities$volume_manufact * big_cities$index
+
 big_cities$t8013002_1_c <- big_cities$t8013002_1 * big_cities$index
 big_cities$t8013002_212_c <- big_cities$t8013002_212 * big_cities$index
 big_cities$t8013002_220_c <- big_cities$t8013002_220 * big_cities$index
 big_cities$t8013002_221_c <- big_cities$t8013002_221 * big_cities$index
 big_cities$t8013002_229_c <- big_cities$t8013002_229 * big_cities$index
 big_cities$t8013002_234_c <- big_cities$t8013002_234 * big_cities$index
+
+# per capita
+big_cities$t8013002_1_c_pc <- big_cities$t8013002_1_c / big_cities$t8112013
+big_cities$t8013002_212_c_pc <- big_cities$t8013002_212_c / big_cities$t8112013
+big_cities$t8013002_220_c_pc <- big_cities$t8013002_220_c / big_cities$t8112013
+big_cities$t8013002_221_c_pc <- big_cities$t8013002_221_c / big_cities$t8112013
+big_cities$t8013002_229_c_pc <- big_cities$t8013002_229_c / big_cities$t8112013
+big_cities$t8013002_234_c_pc <- big_cities$t8013002_234_c / big_cities$t8112013
+
 big_cities["t8013002_220_t8013002_1"] <- big_cities$t8013002_220 / big_cities$t8013002_1 # доля расходов на правоохранителей
-big_cities$log_population <- log(big_cities$population)
-big_cities$log_wage <- log(big_cities$wage_с)
+big_cities$log_population <- log1p(big_cities$population)
+big_cities$log_wage <- log1p(big_cities$wage_c)
 big_cities["t8008008_t8008007"] <- big_cities$t8008008 / big_cities$t8008007 # доля водопроводной сети, нуждающейся в замене
 big_cities["t8008025_t8008008"] <- big_cities$t8008025 / big_cities$t8008008 # доля отремонтированной от нуждающейся
 big_cities["t8006003_t8006007"] <- big_cities$t8008025 / big_cities$t8008008 # доля освещенных частей улиц
@@ -94,8 +104,13 @@ big_cities$t8013001_34_c <- big_cities$t8013001_34 * big_cities$index
 big_cities$t8013001_36_c <- big_cities$t8013001_36 * big_cities$index
 big_cities$t8013001_27_c <- big_cities$t8013001_27 * big_cities$index
 big_cities["t8013001_34_t8013001_1"] <- big_cities$t8013001_34 / big_cities$t8013001_1 # доля безвозмездных поступлений в доходах
-big_cities$log_per_capita_assets <- log(big_cities$assets / big_cities$population)
+big_cities$log_per_capita_assets <- log1p(big_cities$assets * big_cities$index / big_cities$population)
 
+c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+  "living_space", "n_companies", "pop_work", "log_population", 
+  "retail_c", "log_wage", "workers", "t8006003")
+big_cities$t8015001 %>% is.na() %>% sum()
+# share_profitable_firms (588), 
 
 non_competitive_elections <- c("Республика Адыгея", "Республика Дагестан", 
                                "Республика Ингушетия", 
@@ -208,6 +223,58 @@ iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       main = 'Event study: Staggered treatment')
 legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
+################################################################################
+
+
+y_var <- "t8013002_1_c_pc"
+cov_vars <- c("build_flat", "catering_c", "construction_c", "doctors_per10", 
+              "living_space", "n_companies", "pop_work", "log_population", 
+              "retail_c", "log_wage", "workers", "t8006003")
+
+data <- big_cities %>% 
+  select(c("settlement", "region", "year", "treat", "first.treat", 
+           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+
+mod_twfe = feols(t8013002_1_c_pc ~ i(time_to_treat, treat, ref = -1) + 
+                   build_flat + catering_c + construction_c + doctors_per10 + 
+                   living_space + n_companies + pop_work + log_population + 
+                   retail_c + log_wage + workers + t8006003 | 
+                   settlement + year, 
+                 cluster = ~region, 
+                 data = data)
+
+mod_twfe_total = feols(t8013002_1_c_pc ~ treatment +       
+                         build_flat + catering_c + construction_c + doctors_per10 + 
+                         living_space + n_companies + pop_work + log_population + 
+                         retail_c + log_wage + workers + t8006003 |                   
+                         settlement + year,                                           
+                       cluster = ~region,                                             
+                       data = data)
+summary(mod_twfe_total)
+
+iplot(mod_twfe, 
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment (TWFE)')
+
+mod_sa = feols(t8013002_1_c_pc ~ sunab(first.treat, year) + 
+                 build_flat + catering_c + construction_c + doctors_per10 + 
+                 living_space + n_companies + pop_work + log_population + 
+                 retail_c + log_wage + workers + t8006003 | 
+                 settlement + year,  
+               cluster = ~region,  
+               data = data)
+summary(mod_sa, agg = "att")
+
+iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment')
+legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
+       legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
 
 
 ################################################################################

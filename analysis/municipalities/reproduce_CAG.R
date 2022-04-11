@@ -90,6 +90,7 @@ municipalities["t8013002_220_t8013002_1"] <- municipalities$t8013002_220 / munic
 municipalities["t8008008_t8008007"] <- municipalities$t8008008 / municipalities$t8008007 # доля водопроводной сети, нуждающейся в замене
 municipalities["t8008025_t8008008"] <- municipalities$t8008025 / municipalities$t8008008 # доля отремонтированной от нуждающейся
 municipalities["t8006003_t8006007"] <- municipalities$t8008025 / municipalities$t8008008 # доля освещенных частей улиц
+
 municipalities$t8013001_1_c <- municipalities$t8013001_1 * municipalities$index
 municipalities$t8013001_89_c <- municipalities$t8013001_89 * municipalities$index
 municipalities["t8013001_89_t8013001_1"] <- municipalities$t8013001_89 / municipalities$t8013001_1 # доля собственных доходов
@@ -97,6 +98,14 @@ municipalities$t8013001_34_c <- municipalities$t8013001_34 * municipalities$inde
 municipalities$t8013001_36_c <- municipalities$t8013001_36 * municipalities$index
 municipalities$t8013001_27_c <- municipalities$t8013001_27 * municipalities$index
 municipalities["t8013001_34_t8013001_1"] <- municipalities$t8013001_34 / municipalities$t8013001_1 # доля безвозмездных поступлений в доходах
+
+# per capita
+municipalities$t8013001_1_c_pc <- municipalities$t8013001_1_c / municipalities$t8112013
+municipalities$t8013001_89_c_pc <- municipalities$t8013001_89_c / municipalities$t8112013
+municipalities$t8013001_34_c_pc <- municipalities$t8013001_34_c / municipalities$t8112013
+municipalities$t8013001_36_c_pc <- municipalities$t8013001_36_c / municipalities$t8112013
+municipalities$t8013001_27_c_pc <- municipalities$t8013001_27_c / municipalities$t8112013
+
 municipalities$log_population <- log1p(municipalities$t8112013)
 municipalities$log_per_capita_assets <- log1p(municipalities$t8045002_0 / municipalities$t8112013)
 municipalities$log_per_capita_assets1 <- log1p(municipalities$t8045002_21 / municipalities$t8112013)
@@ -140,15 +149,10 @@ municipalities$competitive <- 1 * !(municipalities$region %in% non_competitive_e
 ################################################################################
 
 # все расходы на душу населения, все контроли + активы как 3 переменных
-cov_vars <- c("log_population", "log_per_capita_assets", "log_wage", "share_profitable_firms",
-              "t8015001", "t8015002", "log_new_housing", "t8006007", "t8011011_0")
-
 y_var <- "t8013002_1_c_pc"
 cov_vars <- c("log_population", "log_per_capita_assets1", "log_per_capita_assets2",
               "log_per_capita_assets3", "log_wage", "share_profitable_firms",
               "t8015001", "t8015002", "log_new_housing", "t8006007", "t8011011_0")
-
-municipalities$t8011011_0 %>% is.na() %>% sum()
 
 data <- municipalities %>% 
   select(c("municipality", "region", "year", "treat", "first.treat", 
@@ -194,10 +198,9 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
 
 ################################################################################
 
-
+# все расходы на душу как ЦПУР
 y_var <- "t8013002_1_c"
-cov_vars <- c("log_population", "log_per_capita_assets1", "log_per_capita_assets2",
-              "log_per_capita_assets3", "share_profitable_firms",
+cov_vars <- c("log_population", "log_per_capita_assets", "log_wage", "share_profitable_firms",
               "t8015001", "t8015002", "log_new_housing", "t8006007", "t8011011_0")
 
 municipalities$t8011011_0 %>% is.na() %>% sum()

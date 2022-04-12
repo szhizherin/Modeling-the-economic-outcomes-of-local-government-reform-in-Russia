@@ -199,28 +199,24 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
 ################################################################################
 
 # все расходы на душу как ЦПУР
-y_var <- "t8013002_1_c"
+y_var <- "t8013002_1_c_pc"
 cov_vars <- c("log_population", "log_per_capita_assets", "log_wage", "share_profitable_firms",
               "t8015001", "t8015002", "log_new_housing", "t8006007", "t8011011_0")
-
-municipalities$t8011011_0 %>% is.na() %>% sum()
 
 data <- municipalities %>% 
   select(c("municipality", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", all_of(y_var), all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
 
-mod_twfe = feols(t8013002_1_c ~ i(time_to_treat, treat, ref = -1) + 
-                   log_population + log_per_capita_assets1 + log_per_capita_assets2 +
-                   log_per_capita_assets3 + share_profitable_firms +
+mod_twfe = feols(t8013002_1_c_pc ~ i(time_to_treat, treat, ref = -1) + 
+                   log_population + log_per_capita_assets + log_wage + share_profitable_firms +
                    t8015001 + t8015002 + log_new_housing + t8006007 + t8011011_0 | 
                    municipality + year, 
                  cluster = ~region, 
                  data = data)
 
-mod_twfe_total = feols(t8013002_1_c ~ treatment +       
-                         log_population + log_per_capita_assets1 + log_per_capita_assets2 +
-                         log_per_capita_assets3 + share_profitable_firms +
+mod_twfe_total = feols(t8013002_1_c_pc ~ treatment +       
+                         log_population + log_per_capita_assets + log_wage + share_profitable_firms +
                          t8015001 + t8015002 + log_new_housing + t8006007 + t8011011_0 | 
                          municipality + year,                                           
                        cluster = ~region,                                             
@@ -231,9 +227,8 @@ iplot(mod_twfe,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (TWFE)')
 
-mod_sa = feols(t8013002_1_c ~ sunab(first.treat, year) + 
-                 log_population + log_per_capita_assets1 + log_per_capita_assets2 +
-                 log_per_capita_assets3 + log_wage + share_profitable_firms +
+mod_sa = feols(t8013002_1_c_pc ~ sunab(first.treat, year) + 
+                 log_population + log_per_capita_assets + log_wage + share_profitable_firms +
                  t8015001 + t8015002 + log_new_housing + t8006007 + t8011011_0 | 
                  municipality + year,  
                cluster = ~region,  

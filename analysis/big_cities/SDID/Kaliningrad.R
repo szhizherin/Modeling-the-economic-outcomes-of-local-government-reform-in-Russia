@@ -148,6 +148,7 @@ big_cities$share_culture_workers <- big_cities$t8016002 / big_cities$workers # �
 
 ################################################################################
 
+# все расходы
 y_var <- "t8013002_1_c" # значимо
 city <- "Калининград"
 
@@ -158,7 +159,7 @@ data <- big_cities %>%
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique() # , "2", "1 -> 2"
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique() # , "2", "1 -> 2"
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -198,6 +199,58 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
+# все расходы на душу
+y_var <- "t8013002_1_c_pc" # значимо
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique() # , "2", "1 -> 2"
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# расходы на общегосударственные вопросы
 y_var <- "t8013002_212_c" 
 city <- "Калининград"
 
@@ -208,7 +261,7 @@ data <- big_cities %>%
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique()
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -248,7 +301,8 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
-y_var <- "t8013002_220_c" 
+# расходы на общегосударственные вопросы на душу
+y_var <- "t8013002_212_c_pc" 
 city <- "Калининград"
 
 data <- big_cities %>% 
@@ -258,7 +312,7 @@ data <- big_cities %>%
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique()
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -298,6 +352,109 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
+# расходы на правоохранителей
+y_var <- "t8013002_220_c" # значимо
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# расходы на правоохранителей на душу
+y_var <- "t8013002_220_c_pc" 
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# расходы на национальную экономику
 y_var <- "t8013002_221_c" 
 city <- "Калининград"
 
@@ -308,7 +465,7 @@ data <- big_cities %>%
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique()
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -348,6 +505,58 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
+# расходы на национальную экономику на душу
+y_var <- "t8013002_221_c_pc" 
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# расходы на ЖКХ
 y_var <- "t8013002_229_c" 
 city <- "Калининград"
 
@@ -358,7 +567,7 @@ data <- big_cities %>%
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique()
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -398,6 +607,58 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
+# расходы на ЖКХ на душу
+y_var <- "t8013002_229_c_pc" # значимо, но претренды не особо
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# расходы на социальную политику
 y_var <- "t8013002_234_c" 
 city <- "Калининград"
 
@@ -408,7 +669,58 @@ data <- big_cities %>%
 data <- data %>% 
   group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-always_treated <- (data %>% filter(group %in% c("1", "2", "1 -> 2")))$settlement %>% unique()
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# расходы на социальную политику на душу
+y_var <- "t8013002_234_c_pc" 
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
 never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
 data$treatment_status <- NULL
 data$group <- NULL
@@ -598,7 +910,57 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
-y_var <- "volume_electr_c"
+y_var <- "investment_c_pc"
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.sc, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+y_var <- "volume_electr_c" # плацебо
 city <- "Калининград"
 
 data <- big_cities %>% 
@@ -648,7 +1010,7 @@ synthdid_units_plot(estimates, se.method='placebo')
 
 ################################################################################
 
-y_var <- "volume_manufact_c" 
+y_var <- "volume_manufact_c" # плацебо
 city <- "Калининград"
 
 data <- big_cities %>% 
@@ -746,8 +1108,258 @@ synthdid_plot(estimates, se.method='placebo')
 synthdid_units_plot(estimates, se.method='placebo')
 
 
+################################################################################
+
+# все доходы на душу
+y_var <- "t8013001_1_c_pc"
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
 
 
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
 
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# собственные доходы на душу
+y_var <- "t8013001_89_c_pc"
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# безвозмездные поступления на душу
+y_var <- "t8013001_34_c_pc"
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# безвозмездные поступления от других бюджетов на душу
+y_var <- "t8013001_36_c_pc"
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
+
+
+################################################################################
+
+# доходы от имущества на душу
+y_var <- "t8013001_27_c_pc" # значимо
+city <- "Калининград"
+
+data <- big_cities %>% 
+  select(c("settlement", "year", all_of(y_var), "treatment", "treatment_status")) %>%
+  filter(year %in% 2007:2016)
+
+data <- data %>% 
+  group_by(settlement) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+always_treated <- (data %>% filter(group %in% c("1")))$settlement %>% unique()
+never_treated <- (data %>% filter(group %in% c("0")))$settlement %>% unique()
+data$treatment_status <- NULL
+data$group <- NULL
+
+data <- data %>% 
+  filter(!is.na(data[, paste(y_var)])) %>% 
+  filter(settlement %in% c(city, all_of(always_treated))) %>% 
+  make.pbalanced(balance.type = "shared.individuals")
+
+data <- data %>% 
+  mutate(treatment = case_when(treatment == 1 ~ 0,
+                               treatment == 0 ~ 1))
+
+data <- data %>% 
+  arrange(year, settlement) %>% as.data.frame()
+
+
+setup = panel.matrices(data)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+se = sqrt(vcov(tau.hat, method='placebo'))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+
+plot(tau.hat, se.method='placebo')
+synthdid_units_plot(tau.hat, se.method='placebo')
+plot(tau.hat, overlay=1,  se.method='placebo')
+plot(tau.hat, overlay=.8, se.method='placebo')
+
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+print(unlist(estimates))
+synthdid_plot(estimates, se.method='placebo')
+synthdid_units_plot(estimates, se.method='placebo')
 
 

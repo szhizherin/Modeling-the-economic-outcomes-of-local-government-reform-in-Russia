@@ -14,152 +14,205 @@ library(tidyr)
 
 
 
-
 big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
 BDMO_id_name <- read_csv("intermediate_data/BDMO_id_name.csv") %>% select(-c(1))
 
-big_cities <- big_cities %>% filter(!is.na(treatment))
+big_cities <- big_cities %>% 
+  mutate(treatment_status = case_when(model == "Избираемый мэр" ~ 0,
+                                      model == "Сити-менеджер" ~ 1,
+                                      model == "Назначаемый мэр" ~ 2))
+big_cities <- big_cities %>% filter(!is.na(treatment_status)) %>% as.data.table()
 
-get_code <- function(var_name) {
-  var_id <- (BDMO_id_name %>% filter(name == var_name))$id[1]
-  return(var_id)
+big_cities[, treat := ifelse(first.treat == 0, 0, 1)]
+big_cities[, time_to_treat := ifelse(treat==1, year - first.treat, 0)]
+
+get_group <- function(treatment_history) {
+  # 0 ~ "Избираемый мэр"
+  # 1 ~ "Сити-менеджер"
+  # 2 ~ "Назаначаемый мэр"
+  # the expected behavior would be either 0 -> 2 or 0 -> 1 -> 2 or 0 -> 1 or
+  # 1 -> 2 or constant treatment status
+  
+  if (!((treatment_history == cummax(treatment_history)) %>% all())) {
+    return("unexpected")
+  }
+  
+  if ((c(0, 1, 2) %in% treatment_history %>% all())) {
+    return("0 -> 1 -> 2")
+  }
+  else if ((c(0, 1) %in% treatment_history %>% all())) {
+    return("0 -> 1")
+  } 
+  else if ((c(0, 2) %in% treatment_history %>% all())) {
+    return("0 -> 2")
+  } 
+  else if ((c(1, 2) %in% treatment_history %>% all())) {
+    return("1 -> 2")
+  }
+  else if ((treatment_history == rep(0, length(treatment_history))) %>% all()) {
+    return("0")
+  }
+  else if ((treatment_history == rep(1, length(treatment_history))) %>% all()) {
+    return("1")
+  }
+  else if ((treatment_history == rep(2, length(treatment_history))) %>% all()) {
+    return("2")
+  }
 }
 
 
-y_names <- c(# "Общий объем расходов бюджета муниципального образования|||t8313001|||Всего",
-  "Расходы бюджета муниципального образования на содержание работников органов местного самоуправления в расчете на одного жителя муниципального образования (2008г. - тысяч рублей)",
-  "Расходы бюджета муниципального образования на содержание работников органов местного самоуправления в расчете на одного жителя муниципального образования (2008г. - тыс. рублей)",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Всего",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Общегосударственные вопросы",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Национальная безопасность и правоохранительная деятельность",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Национальная экономика",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Жилищно-коммунальное хозяйство",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Социальная политика",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Культура, кинематография",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Дорожное хозяйство (дорожные фонды)",
-  "Расходы местного бюджета, фактически исполненные|||t8013002|||Физическая культура и спорт",
-  "Численность работников организаций культурно-досугового типа с учетом обособленных подразделений, всего",
-  "Среднесписочная численность работников организаций муниципальной формы собственности|||t8123015|||Раздел L Государственное управление и обеспечение военной безопасности; социальное страхование",
-  "Среднемесячная заработная плата работников организаций муниципальной формы собственности|||t8123017|||Раздел L Государственное управление и обеспечение военной безопасности; социальное страхование",
-  "Инвестиции в основной капитал организаций муниципальной формы собственности",
-  "Инвестиции в основной капитал, осуществляемые организациями, находящимися на территории муниципального образования (без субъектов малого предпринимательства)",
-  "Одиночное протяжение уличной водопроводной сети (lдо 2008г.- км)", #
-  "Одиночное протяжение уличной водопроводной сети, нуждающейся в замене (lдо 2008г.- км)",
-  "Одиночное протяжение уличной водопроводной сети, которая заменена и отремонтирована за отчетный год", #
-  "Доходы местного бюджета, фактически исполненные|||t8013001|||Всего",
-  "Доходы местного бюджета, фактически исполненные|||t8013001|||Из общей величины доходов - собственные доходы",
-  "Доходы местного бюджета, фактически исполненные|||t8013001|||Безвозмездные поступления",
-  "Доходы местного бюджета, фактически исполненные|||t8013001|||Безвозмездные поступления от других бюджетов бюджетной системы Российской Федерации",
-  "Доходы местного бюджета, фактически исполненные|||t8013001|||Доходы от использования имущества, находящегося в государственной и муниципальной собственности",
-  "Число семей, состоящих на учете в качестве нуждающихся в жилых помещениях на конец года|||t8011011|||Всего",
-  "Число семей, получивших жилые помещения и улучшивших жилищные условия в отчетном году.|||t8011010|||Всего",
-  "Общая протяженность освещенных частей улиц, проездов, набережных на конец года")
-
-X_names <- c("Оценка численности населения на 1 января текущего года|||t8112027|||Все население",
-             "Среднегодовая численность постоянного населения", # с населением только эти 2 кандидата, у 2 на 3000 меньше пропусков
-             "Удельный вес прибыльных организаций в общем числе организаций (по 2016 год)|||t8042018|||Всего_Всего",
-             "Удельный вес прибыльных организаций в общем числе организаций (по okved2)|||t8942018|||Всего_Всего по обследуемым видам экономической деятельности",#вторая часть предыдущего показателя (но вообще, надо это проверить, посмотрев на ряды для мунципалитетов)
-             #"Среднемесячная заработная плата работников организаций (по 2016 год)|||t8123007|||Всего",
-             #"Наличие основных фондов на конец года по полной учетной стоимости по некоммерческим организациям муниципальной формы собственности|||t8045002|||Всего основных фондов",
-             "Наличие основных фондов на конец года по полной учетной стоимости по некоммерческим организациям муниципальной формы собственности|||t8045002|||Здания",
-             "Наличие основных фондов на конец года по полной учетной стоимости по некоммерческим организациям муниципальной формы собственности|||t8045002|||Машины и оборудование",
-             "Наличие основных фондов на конец года по полной учетной стоимости по некоммерческим организациям муниципальной формы собственности|||t8045002|||Транспортные средства", # эти 3 категории вместо всего, т.к. по ним больше данных
-             #"Кредиторская задолженность (по 2016 год)|||t8042005|||Муниципальная собственность_Всего",
-             "Протяженность автодорог общего пользования местного значения, находящихся в собственности муниципальных образований на конец года|||t8006005|||всего",
-             "Общая протяженность улиц, проездов, набережных на конец года")
+big_cities <- big_cities %>% 
+  group_by(oktmo) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
 
-for (name in X_names) {
-  print(name %>% get_code())
-}
-
-for (name in y_names) {
-  print(name %>% get_code())
-}
-
-# [1] "t8112027_11"
-# [1] "t8112013"
-# [1] "t8042018_kfs199_okved0"
-# [1] "t8942018_kfs199_okved2101"
-# [1] "t8045002_21" .
-# [1] "t8045002_26" .
-# [1] "t8045002_27" .
-# [1] "t8006005_9"
-# [1] "t8006007"
-
-# -----------------
-
-# [1] "t8013004" .
-# [1] "t8313004" .
-# [1] "t8013002_1" .
-# [1] "t8013002_212" .
-# [1] "t8013002_220" .
-# [1] "t8013002_221" .
-# [1] "t8013002_229" .
-# [1] "t8013002_234" .
-# [1] "t8013002_239" .
-# [1] "t8013002_285" .
-# [1] "t8013002_434" .
-# [1] "t8016002"
-# [1] "t8123015_12"
-# [1] "t8123017_12" .
-# [1] "t8109002" .
-# [1] "t8109001" .
-# [1] "t8008007"
-# [1] "t8008008"
-# [1] "t8008025"
-# [1] "t8013001_1" .
-# [1] "t8013001_89" .
-# [1] "t8013001_34" .
-# [1] "t8013001_36" .
-# [1] "t8013001_27" .
-# [1] "t8011011_0"
-# [1] "t8011010_0"
-# [1] "t8006003"
-
-
-################################################################################
-#     Расходы местного бюджета, фактически исполненные|||t8013002|||Всего      #
-#                                                                              #
-#                                                                              #
-################################################################################
-
-"Расходы местного бюджета, фактически исполненные|||t8013002|||Всего" %>% get_code()
-
-# big_cities
 # "c" stands for inflation- and regional prices-corrected
-big_cities$t8045002_21_c <- big_cities$t8045002_21 * big_cities$index
-big_cities$t8045002_26_c <- big_cities$t8045002_26 * big_cities$index
-big_cities$t8045002_27_c <- big_cities$t8045002_27 * big_cities$index
+big_cities$catering_c <- big_cities$catering * big_cities$index
+big_cities$construction_c <- big_cities$construction * big_cities$index
+big_cities$pension_c <- big_cities$pension * big_cities$index
+big_cities$retail_c <- big_cities$retail * big_cities$index
+big_cities$wage_c <- big_cities$wage * big_cities$index
+big_cities$investment_c <- big_cities$investment * big_cities$index
+big_cities$volume_electr_c <- big_cities$volume_electr * big_cities$index
+big_cities$volume_manufact_c <- big_cities$volume_manufact * big_cities$index
 
-
+# расходы
 big_cities$t8013002_1_c <- big_cities$t8013002_1 * big_cities$index
-big_cities$t8013004_c <- big_cities$t8013004 * big_cities$index
-big_cities$t8313004_c <- big_cities$t8313004 * big_cities$index # 1 + t8042018_kfs199_okved0 + t8045002_21
 big_cities$t8013002_212_c <- big_cities$t8013002_212 * big_cities$index
 big_cities$t8013002_220_c <- big_cities$t8013002_220 * big_cities$index
 big_cities$t8013002_221_c <- big_cities$t8013002_221 * big_cities$index
 big_cities$t8013002_229_c <- big_cities$t8013002_229 * big_cities$index
 big_cities$t8013002_234_c <- big_cities$t8013002_234 * big_cities$index
-big_cities$t8013002_239_c <- big_cities$t8013002_239 * big_cities$index
-big_cities$t8013002_285_c <- big_cities$t8013002_285 * big_cities$index
-big_cities$t8013002_434_c <- big_cities$t8013002_434 * big_cities$index
-big_cities$t8109002_c <- big_cities$t8109002 * big_cities$index
-big_cities$t8109001_c <- big_cities$t8109001 * big_cities$index
+big_cities$t8013002_239_c <- big_cities$t8013002_239 * big_cities$index # культура, кинематография
+big_cities$t8013002_285_c <- big_cities$t8013002_285 * big_cities$index # дороги
+big_cities$t8013002_434_c <- big_cities$t8013002_434 * big_cities$index # физкультура и спорт
+
+# per capita
+big_cities$t8013002_1_c_pc <- big_cities$t8013002_1_c / big_cities$population
+big_cities$t8013002_212_c_pc <- big_cities$t8013002_212_c / big_cities$population
+big_cities$t8013002_220_c_pc <- big_cities$t8013002_220_c / big_cities$population
+big_cities$t8013002_221_c_pc <- big_cities$t8013002_221_c / big_cities$population
+big_cities$t8013002_229_c_pc <- big_cities$t8013002_229_c / big_cities$population
+big_cities$t8013002_234_c_pc <- big_cities$t8013002_234_c / big_cities$population
+big_cities$t8013002_239_c_pc <- big_cities$t8013002_239_c / big_cities$population
+big_cities$t8013002_285_c_pc <- big_cities$t8013002_285_c / big_cities$population
+big_cities$t8013002_434_c_pc <- big_cities$t8013002_434_c / big_cities$population
+
+big_cities$t8013002_220_c_per_crime <- big_cities$t8013002_220_c / big_cities$crimes
+
+big_cities["t8013002_220_t8013002_1"] <- big_cities$t8013002_220 / big_cities$t8013002_1 # доля расходов на правоохранителей
+big_cities$log_population <- log1p(big_cities$population)
+big_cities$log_wage <- log1p(big_cities$wage_c)
+big_cities["t8008008_t8008007"] <- big_cities$t8008008 / big_cities$t8008007 # доля водопроводной сети, нуждающейся в замене
+big_cities["t8008025_t8008008"] <- big_cities$t8008025 / big_cities$t8008008 # доля отремонтированной от нуждающейся
+big_cities["t8006003_t8006007"] <- big_cities$t8008025 / big_cities$t8008008 # доля освещенных частей улиц
+
 big_cities$t8013001_1_c <- big_cities$t8013001_1 * big_cities$index
 big_cities$t8013001_89_c <- big_cities$t8013001_89 * big_cities$index
+big_cities["t8013001_89_t8013001_1"] <- big_cities$t8013001_89 / big_cities$t8013001_1 # доля собственных доходов
 big_cities$t8013001_34_c <- big_cities$t8013001_34 * big_cities$index
 big_cities$t8013001_36_c <- big_cities$t8013001_36 * big_cities$index
 big_cities$t8013001_27_c <- big_cities$t8013001_27 * big_cities$index
+big_cities["t8013001_34_t8013001_1"] <- big_cities$t8013001_34 / big_cities$t8013001_1 # доля безвозмездных поступлений в доходах
+big_cities["t8013001_36_t8013001_1"] <- big_cities$t8013001_36 / big_cities$t8013001_1 # доля безвозмездных поступлений от других бюджетов
+big_cities$t8013001_5_c <- big_cities$t8013001_5 * big_cities$index # доходы от НДФЛ
+big_cities$t8013001_296_c <- big_cities$t8013001_296 * big_cities$index # субсидии
+big_cities$t8013001_294_c <- big_cities$t8013001_294 * big_cities$index # субвенции
+big_cities$t8013001_293_c <- big_cities$t8013001_293 * big_cities$index # дотации
 
 
-# доля водопроводной сети, нуждающейся в замене
-big_cities["t8008008/t8008007"] <- big_cities$t8008008 / big_cities$t8008007 #
-# доля отремонтированной из нуждающейся
-big_cities["t8008007/t8008025"] <- big_cities$t8008007 / big_cities$t8008025
-# доля освещённых улиц
-big_cities["t8006003/t8006007"] <- big_cities$t8006003 / big_cities$t8006007
+# per capita
+big_cities$t8013001_1_c_pc <- big_cities$t8013001_1_c / big_cities$population
+big_cities$t8013001_89_c_pc <- big_cities$t8013001_89_c / big_cities$population
+big_cities$t8013001_34_c_pc <- big_cities$t8013001_34_c / big_cities$population
+big_cities$t8013001_36_c_pc <- big_cities$t8013001_36_c / big_cities$population
+big_cities$t8013001_27_c_pc <- big_cities$t8013001_27_c / big_cities$population
+big_cities$t8013001_5_c_pc <- big_cities$t8013001_5_c / big_cities$population # НДФЛ
+big_cities$t8013001_296_c_pc <- big_cities$t8013001_296_c / big_cities$population # субсидии
+big_cities$t8013001_294_c_pc <- big_cities$t8013001_294_c / big_cities$population # субвенции
+big_cities$t8013001_293_c_pc <- big_cities$t8013001_293_c / big_cities$population # дотации
 
+big_cities$budget_prof_c <- big_cities$t8013001_1_c - big_cities$t8013002_1_c # профицит бюджета
+big_cities$budget_prof_c_pc <- big_cities$budget_prof_c / big_cities$population # профицит бюджета на душу
+
+big_cities$log_per_capita_assets <- log1p(big_cities$assets * big_cities$index / big_cities$population)
+
+big_cities$schools_per_1000 <- big_cities$t8015001 / big_cities$population
+big_cities$pupils_per_1000 <- big_cities$t8015002 / big_cities$population
+big_cities$log_new_housing <- log1p(big_cities$t8010001)
+big_cities$log_build_flat <- log1p(big_cities$build_flat)
+
+# per capita
+big_cities$catering_c_pc <- big_cities$catering_c / big_cities$population
+big_cities$construction_c_pc <- big_cities$construction_c / big_cities$population
+big_cities$retail_c_pc <- big_cities$retail_c / big_cities$population
+big_cities$investment_c_pc <- big_cities$investment_c / big_cities$population
+big_cities$volume_electr_c_pc <- big_cities$volume_electr_c / big_cities$population
+big_cities$volume_manufact_c_pc <- big_cities$volume_manufact_c / big_cities$population
+
+big_cities$t8109002_c <- big_cities$t8109002 * big_cities$index # Инвестиции в основной капитал организаций муниципальной формы собственности
+big_cities$t8109002_c_pc <- big_cities$t8109002_c / big_cities$population
+big_cities$t8009001_c <- big_cities$t8009001 * big_cities$index # Инвестиции в основной капитал за счет средств бюджета муниципального образования
+big_cities$t8009001_c_pc <- big_cities$t8009001_c / big_cities$population
+
+big_cities$t8013004_c <- big_cities$t8013004 * big_cities$index # Расходы на содержание работников местного СУ на душу
+big_cities$t8123017_12_c <- big_cities$t8123017_12 * big_cities$index # Зарплата работников госуправления
+
+big_cities$share_culture_workers <- big_cities$t8016002 / big_cities$workers # доля работников культуры
+
+non_competitive_elections <- c("Чеченская республика", "Республика Дагестан", 
+                               "Республика Ингушетия", 
+                               "Карачаево-Черкесская республика", "Республика Тыва", 
+                               "Республика Мордовия", "Ямало-Ненецкий автономный округ", 
+                               "Республика Татарстан", "Кабардино-Балкарская республика", 
+                               "Кемеровская область", "Республика Башкортостан", "Тюменская область", 
+                               "Чукотский автономный округ", "Тамбовская область", 
+                               "Саратовская область", "Республика Калмыкия", 
+                               "Республика Северная Осетия - Алания", 
+                               "Республика Саха (Якутия)", 
+                               "Астраханская область", "Тульская область")
+
+big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
+
+
+################################################################################
+
+# все расходы
+y_var <- "t8013002_1_c_pc" 
+cov_vars <- c()
+
+data <- big_cities %>% 
+  filter(group != "unexpected") %>% 
+  select(c("settlement", "region", "year", "treat", "first.treat", "oktmo",
+           "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
+  mutate(first.treat.nc = first.treat*(1-competitive)) %>% 
+  drop_na() %>% as.data.frame()
+
+out <- att_gt(yname = y_var,
+              gname = "first.treat",
+              idname = "oktmo",
+              tname = "year",
+              xformla = ~1,
+              data = data,
+              est_method = "dr",
+              clustervars = "region",
+              #bstrap = F,
+              #cband = F
+)
+es <- aggte(out, type = "dynamic", na.rm = T)
+ggdid(es)
+group_effects <- aggte(out, type = "group", na.rm = T)
+
+out %>% summary()
+ggdid(out)
+
+es %>% summary()
+ggdid(es)
+
+group_effects %>% summary()
+ggdid(group_effects)
+
+
+################################################################################
 
 y_id <- "t8013002_1_c"
 

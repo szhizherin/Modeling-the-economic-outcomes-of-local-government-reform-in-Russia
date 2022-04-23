@@ -65,8 +65,6 @@ get_group <- function(treatment_history) {
 big_cities <- big_cities %>% 
   group_by(oktmo) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
 
-big_cities[big_cities$first.treat == 0,]$first.treat <- 99999 # для корректной работы SA оценки
-
 
 # "c" stands for inflation- and regional prices-corrected
 big_cities$catering_c <- big_cities$catering * big_cities$index

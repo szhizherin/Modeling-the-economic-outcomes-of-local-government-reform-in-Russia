@@ -175,7 +175,6 @@ big_cities$share_culture_workers <- big_cities$t8016002 / big_cities$workers # �
 
 big_cities$log_per_capita_assets %>% is.na() %>% sum()
 
-big_cities %>% filter(competitive == 0) %>% select(settlement, year, treatment, treatment_status, group) %>% View()
 # schools_per_1000 pupils_per_1000 t8006007 t8010001 pension_c
 
 # share_profitable_firms (588), t8011011_0 (398) - число нуждающихся в жилье семей,
@@ -360,7 +359,7 @@ non_competitive_elections_carnegie_less30_without_20 <-
   setdiff(non_competitive_elections_carnegie_less30, non_competitive_elections) # не султанаты среди 37 худших центра Карнеги
 # значима только доля расходов на правоохранителей на 5% уровне
 
-big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections_carnegie_last20)
+big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
 2094 - big_cities$competitive %>% sum()
 ################################################################################
 
@@ -547,7 +546,6 @@ iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1, ci_level = 0.99,
       main = 'Event study: Staggered treatment')
 legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
-
 
 ################################################################################
 

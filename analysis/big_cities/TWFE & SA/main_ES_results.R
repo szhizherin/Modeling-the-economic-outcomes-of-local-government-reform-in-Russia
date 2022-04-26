@@ -209,7 +209,7 @@ cov_vars <- c("log_build_flat",
 data <- big_cities %>% 
   filter(group != "unexpected") %>% 
   select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", "competitive",  y_var, all_of(cov_vars))) %>% 
+           "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
 
 mod_twfe = feols(t8013002_1_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
@@ -257,7 +257,6 @@ iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1, ci_level = 0.99,
       main = 'Event study: Staggered treatment')
 legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
-
 
 ################################################################################
 

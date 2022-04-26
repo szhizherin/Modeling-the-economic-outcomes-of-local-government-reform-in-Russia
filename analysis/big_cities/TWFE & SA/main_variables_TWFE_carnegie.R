@@ -175,35 +175,6 @@ big_cities$t8123017_12_c <- big_cities$t8123017_12 * big_cities$index # Зарп
 
 big_cities$share_culture_workers <- big_cities$t8016002 / big_cities$workers # доля работников культуры
 
-big_cities$log_per_capita_assets %>% is.na() %>% sum()
-
-# schools_per_1000 pupils_per_1000 t8006007 t8010001 pension_c
-
-# share_profitable_firms (588), t8011011_0 (398) - число нуждающихся в жилье семей,
-# log_per_capita_assets (311)
-
-# c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc", 
-#   "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
-#   "living_space", "n_companies", "pop_work", "log_population", "log_wage",
-#   "workers", "t8006003", "pension_c") - почти не добавляют пропусков
-
-# c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
-#   "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
-#   "living_space", "n_companies", "pop_work", "log_population", "log_wage",
-#   "workers", "t8006003", "pension_c", "schools_per_1000", "pupils_per_1000",
-#   "t8006007") с добавлением школ и дорог (по 200 пропусков)
-
-# c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
-#   "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
-#   "living_space", "n_companies", "pop_work", "log_population", "log_wage",
-#   "workers", "t8006003", "pension_c", "schools_per_1000", "pupils_per_1000",
-#   "t8006007", "log_per_capita_assets", "t8011011_0") с добавлением активов и нуждающихся семей
-
-# c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
-#   "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
-#   "living_space", "n_companies", "pop_work", "log_population", "log_wage",
-#   "workers", "t8006003", "pension_c", "schools_per_1000", "pupils_per_1000",
-#   "t8006007", "log_per_capita_assets", "t8011011_0", "share_profitable_firms") все контроли
 
 non_competitive_elections_old <- c("Республика Адыгея", "Республика Дагестан", 
                                    "Республика Ингушетия", 
@@ -361,9 +332,8 @@ non_competitive_elections_carnegie_less30_without_20 <-
   setdiff(non_competitive_elections_carnegie_less30, non_competitive_elections) # не султанаты среди 37 худших центра Карнеги
 # значима только доля расходов на правоохранителей на 5% уровне
 
-big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections_carnegie_less30)
+big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections_carnegie_less30_without_20)
 2094 - big_cities$competitive %>% sum()
-
 
 
 ################################################################################
@@ -444,6 +414,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_231_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -499,6 +470,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_212_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -557,6 +529,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_221_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -612,6 +585,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_229_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -670,6 +644,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_234_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -725,6 +700,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_239_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -780,6 +756,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(invest_budg ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -838,6 +815,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(invest_fed ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -896,6 +874,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(investment_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -951,6 +930,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8009001_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + 
@@ -1009,6 +989,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8008008_t8008007 ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -1064,6 +1045,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_1_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + 
@@ -1122,6 +1104,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_5_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -1180,6 +1163,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_15_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + 
@@ -1238,6 +1222,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_14_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -1296,6 +1281,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_296_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + 
@@ -1348,6 +1334,7 @@ cov_vars <- c("log_build_flat",
               "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
               "living_space", "n_companies", "pop_work", "log_population", "log_wage",
               "workers", "t8006003", "pension_c")
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 data <- big_cities %>%    
   filter(group != "unexpected") %>%  
@@ -1412,6 +1399,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_293_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat +
@@ -1470,6 +1458,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_89_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + 
@@ -1528,6 +1517,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_34_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -1583,6 +1573,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8123015_12 ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +

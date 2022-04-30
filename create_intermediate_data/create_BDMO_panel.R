@@ -76,7 +76,9 @@ y_names <- c(# "Общий объем расходов бюджета муниц
              "Задолженность по платежам в бюджет из общей суммы кредиторской задолженности (по 2016 год)|||t8042006|||Муниципальная собственность_Всего",
              "Задолженность по платежам в бюджет из общей суммы кредиторской задолженности (по okved2)|||t8942006|||Муниципальная собственность_Всего по обследуемым видам экономической деятельности",
              "Задолженность по полученным займам и кредитам (по 2016 год)|||t8042009|||Муниципальная собственность_Всего",
-             "Задолженность по полученным займам и кредитам (по okved2)|||t8942009|||Муниципальная собственность_Всего по обследуемым видам экономической деятельности")
+             "Задолженность по полученным займам и кредитам (по okved2)|||t8942009|||Муниципальная собственность_Всего по обследуемым видам экономической деятельности",
+             "Дебиторская задолженность (по 2016 год)|||t8042003|||Муниципальная собственность_Всего",
+             "Дебиторская задолженность (по okved2)|||t8942003|||Муниципальная собственность_Всего по обследуемым видам экономической деятельности")
 
 
 X_names <- c("Оценка численности населения на 1 января текущего года|||t8112027|||Все население",
@@ -329,6 +331,56 @@ for (i in 1:length(before_2016)) {
 
 BDMO_panel$mun_debt_bank <- mun_debt_bank
 
+
+# create n_mun_firms_reported
+before_2016 <- BDMO_panel$t8042010_kfs14_okved0
+after_2016 <- BDMO_panel$t8942010_kfs14_okved2101
+
+n_mun_firms_reported <- c()
+
+for (i in 1:length(before_2016)) {
+  if (is.na(before_2016[i])) {
+    n_mun_firms_reported <- c(n_mun_firms_reported, after_2016[i])
+  } else {
+    n_mun_firms_reported <- c(n_mun_firms_reported, before_2016[i])
+  }
+}
+
+BDMO_panel$n_mun_firms_reported <- n_mun_firms_reported
+
+
+# create mun_firms_profit
+before_2016 <- BDMO_panel$t8042001_kfs14_okved0
+after_2016 <- BDMO_panel$t8942001_kfs14_okved2101
+
+mun_firms_profit <- c()
+
+for (i in 1:length(before_2016)) {
+  if (is.na(before_2016[i])) {
+    mun_firms_profit <- c(mun_firms_profit, after_2016[i])
+  } else {
+    mun_firms_profit <- c(mun_firms_profit, before_2016[i])
+  }
+}
+
+BDMO_panel$mun_firms_profit <- mun_firms_profit
+
+
+# create debt_to_mun_firms
+before_2016 <- BDMO_panel$t8042003_kfs14_okved0
+after_2016 <- BDMO_panel$t8942003_kfs14_okved2101
+
+debt_to_mun_firms <- c()
+
+for (i in 1:length(before_2016)) {
+  if (is.na(before_2016[i])) {
+    debt_to_mun_firms <- c(debt_to_mun_firms, after_2016[i])
+  } else {
+    debt_to_mun_firms <- c(debt_to_mun_firms, before_2016[i])
+  }
+}
+
+BDMO_panel$debt_to_mun_firms <- debt_to_mun_firms
 
 
 

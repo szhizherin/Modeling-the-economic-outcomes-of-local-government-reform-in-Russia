@@ -92,6 +92,7 @@ big_cities$t8013002_220_c <- big_cities$t8013002_220 * big_cities$index
 big_cities$t8013002_221_c <- big_cities$t8013002_221 * big_cities$index
 big_cities$t8013002_229_c <- big_cities$t8013002_229 * big_cities$index
 big_cities$t8013002_234_c <- big_cities$t8013002_234 * big_cities$index
+big_cities$t8013002_231_c <- big_cities$t8013002_231 * big_cities$index
 big_cities$t8013002_239_c <- big_cities$t8013002_239 * big_cities$index # культура, кинематография
 big_cities$t8013002_285_c <- big_cities$t8013002_285 * big_cities$index # дороги
 big_cities$t8013002_434_c <- big_cities$t8013002_434 * big_cities$index # физкультура и спорт
@@ -103,6 +104,7 @@ big_cities$t8013002_220_c_pc <- big_cities$t8013002_220_c / big_cities$populatio
 big_cities$t8013002_221_c_pc <- big_cities$t8013002_221_c / big_cities$population
 big_cities$t8013002_229_c_pc <- big_cities$t8013002_229_c / big_cities$population
 big_cities$t8013002_234_c_pc <- big_cities$t8013002_234_c / big_cities$population
+big_cities$t8013002_231_c_pc <- big_cities$t8013002_231_c / big_cities$population
 big_cities$t8013002_239_c_pc <- big_cities$t8013002_239_c / big_cities$population
 big_cities$t8013002_285_c_pc <- big_cities$t8013002_285_c / big_cities$population
 big_cities$t8013002_434_c_pc <- big_cities$t8013002_434_c / big_cities$population
@@ -177,6 +179,7 @@ big_cities$wages_payed <- big_cities$wage_c * big_cities$workers
 
 # ln
 big_cities$ln_t8013002_1_c_pc <- log(big_cities$t8013002_1_c_pc)
+big_cities$ln_t8013002_231_c_pc <- log(big_cities$t8013002_231_c_pc)
 big_cities$ln_t8013002_212_c_pc <- log(big_cities$t8013002_212_c_pc)
 big_cities$ln_t8013002_221_c_pc <- log(big_cities$t8013002_221_c_pc)
 big_cities$ln_t8013002_229_c_pc <- log(big_cities$t8013002_229_c_pc)
@@ -194,6 +197,21 @@ big_cities$ln_t8013001_293_c_pc <- log(big_cities$t8013001_293_c_pc + 1e-5)
 big_cities$ln_t8013001_89_c_pc <- log(big_cities$t8013001_89_c_pc)
 big_cities$ln_t8013001_34_c_pc <- log(big_cities$t8013001_34_c_pc)
 
+big_cities$ln_catering_c_pc <- log(big_cities$catering_c_pc)
+big_cities$ln_construction_c_pc <- log(big_cities$construction_c_pc)
+big_cities$ln_retail_c_pc <- log(big_cities$retail_c_pc)
+big_cities$ln_volume_electr_c_pc <- log(big_cities$volume_electr_c_pc)
+big_cities$ln_volume_manufact_c_pc <- log(big_cities$volume_manufact_c_pc)
+big_cities$ln_doctors_per10 <- log(big_cities$doctors_per10)
+big_cities$ln_living_space <- log(big_cities$living_space)
+big_cities$ln_n_companies <- log(big_cities$n_companies)
+big_cities$ln_workers <- log(big_cities$workers)
+big_cities$ln_t8006003 <- log(big_cities$t8006003)
+big_cities$ln_pension_c <- log(big_cities$pension_c)
+
+
+
+
 
 non_competitive_elections <- c("Чеченская республика", "Республика Дагестан", 
                                "Республика Ингушетия", 
@@ -210,7 +228,7 @@ non_competitive_elections <- c("Чеченская республика", "Ре�
 big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
 
 
-dep_vars <- c("t8013002_1_c_pc", "t8013002_212_c_pc", "t8013002_221_c_pc",
+dep_vars <- c("t8013002_1_c_pc", "t8013002_231_c_pc", "t8013002_212_c_pc", "t8013002_221_c_pc",
               "t8013002_229_c_pc", "t8013002_234_c_pc", "t8013002_239_c_pc",
               "invest_budg", "invest_fed", "investment_c_pc", "t8009001_c_pc",
               "t8008008_t8008007", "t8013001_1_c_pc", "t8013001_5_c_pc",
@@ -218,7 +236,7 @@ dep_vars <- c("t8013002_1_c_pc", "t8013002_212_c_pc", "t8013002_221_c_pc",
               "t8013001_294_c_pc", "t8013001_293_c_pc", "t8013001_89_c_pc",
               "t8013001_34_c_pc", "t8123015_12")
 
-dep_vars <- c("ln_t8013002_1_c_pc", "ln_t8013002_212_c_pc", "ln_t8013002_221_c_pc",
+dep_vars <- c("ln_t8013002_1_c_pc", "ln_t8013002_231_c_pc", "ln_t8013002_212_c_pc", "ln_t8013002_221_c_pc",
               "ln_t8013002_229_c_pc", "ln_t8013002_234_c_pc", "ln_t8013002_239_c_pc",
               "invest_budg", "invest_fed", "ln_investment_c_pc", "ln_t8009001_c_pc",
               "t8008008_t8008007", "ln_t8013001_1_c_pc", "ln_t8013001_5_c_pc",
@@ -227,13 +245,23 @@ dep_vars <- c("ln_t8013002_1_c_pc", "ln_t8013002_212_c_pc", "ln_t8013002_221_c_p
               "ln_t8013001_34_c_pc", "t8123015_12")
 
 data <- big_cities %>% select(all_of(dep_vars)) %>% as.data.frame()
-data %>% stargazer(type = "text")
+data %>% stargazer(type = "text", digits = 1, style = "aer")
+data %>% stargazer(type = "latex", digits = 1, style = "aer")
 
 
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
+  "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+  "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+  "workers", "t8006003", "pension_c")
 
+cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_construction_c_pc",
+              "ln_retail_c_pc", "ln_volume_electr_c_pc", "ln_volume_manufact_c_pc", "ln_doctors_per10",
+              "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
+              "ln_workers", "ln_t8006003", "ln_pension_c")
 
-
-
+data <- big_cities %>% select(all_of(cov_vars)) %>% as.data.frame()
+data %>% stargazer(type = "text", digits = 1, style = "aer")
+data %>% stargazer(type = "latex", digits = 1, style = "aer")
 
 
 

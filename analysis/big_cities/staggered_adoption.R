@@ -178,7 +178,11 @@ big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections
 
 # все расходы
 y_var <- "t8013002_1_c_pc" 
-cov_vars <- c()
+cov_vars <- c("log_build_flat",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c", "schools_per_1000", "pupils_per_1000",
+              "t8006007")
 
 data <- big_cities %>% 
   filter(group != "unexpected") %>% 
@@ -188,20 +192,40 @@ data <- big_cities %>%
   drop_na() %>% as.data.frame()
 
 out <- att_gt(yname = y_var,
-              gname = "first.treat",
+              gname = "first.treat.nc",
               idname = "oktmo",
               tname = "year",
-              xformla = ~1,
+              xformla = ~ treatment +
+                log_build_flat  + 
+                retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                living_space + n_companies + pop_work + log_population + log_wage +
+                workers + t8006003 + pension_c + schools_per_1000 + pupils_per_1000 +
+                t8006007,
               data = data,
-              est_method = "dr",
+              #est_method = "dr",
               clustervars = "region",
               #bstrap = F,
               #cband = F
 )
 es <- aggte(out, type = "dynamic", na.rm = T)
 ggdid(es)
+es %>% summary()
 group_effects <- aggte(out, type = "group", na.rm = T)
 
+
+cdp <- conditional_did_pretest(yname = y_var,
+                               gname = "first.treat.nc",
+                               idname = "oktmo",
+                               tname = "year",
+                               xformla = ~ treatment +
+                                 log_build_flat  + 
+                                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                                 living_space + n_companies + pop_work + log_population + log_wage +
+                                 workers + t8006003 + pension_c + schools_per_1000 + pupils_per_1000 +
+                                 t8006007,
+                               #control_group="notyettreated",
+                               data = data)
+cdp
 out %>% summary()
 ggdid(out)
 
@@ -236,7 +260,7 @@ out <- att_gt(yname = y_id,
               tname = "year",
               xformla = x_fm,
               data = big_cities,
-              est_method = "dr",
+              est_method = "reg",
               clustervars = "region_oktmo",
               #bstrap = F,
               #cband = F

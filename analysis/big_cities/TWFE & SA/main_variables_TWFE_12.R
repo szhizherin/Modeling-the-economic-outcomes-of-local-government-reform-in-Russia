@@ -24,8 +24,6 @@ big_cities <- big_cities %>%
                                       model == "Назначаемый мэр" ~ 2))
 big_cities <- big_cities %>% filter(!is.na(treatment_status)) %>% as.data.table()
 
-big_cities[, treat := ifelse(first.treat == 0, 0, 1)]
-big_cities[, time_to_treat := ifelse(treat==1, year - first.treat, 0)]
 
 get_group <- function(treatment_history) {
   # 0 ~ "Избираемый мэр"
@@ -72,6 +70,32 @@ num_treated_and_never_treated <- function(data) {
 
 big_cities <- big_cities %>% 
   group_by(oktmo) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
+
+big_cities <- big_cities %>% 
+  filter(group %in% c("1", "1 -> 2")) %>% as.data.table()
+
+big_cities[, treatment := ifelse(treatment_status == 1, 0, 1)]
+
+# first year of treatment for each city
+big_cities$first.treat = big_cities$treatment * big_cities$year
+
+big_cities <- big_cities %>% 
+  mutate(first.treat = case_when(first.treat == 0 ~ Inf,
+                                 first.treat != 0 ~ first.treat))
+
+big_cities <- big_cities %>% 
+  group_by(oktmo) %>% 
+  mutate(first.treat = min(first.treat, na.rm = T)) %>% 
+  ungroup()
+
+big_cities <- big_cities %>% 
+  mutate(first.treat = case_when(first.treat == Inf ~ 0,
+                                 first.treat != Inf ~ first.treat)) %>% 
+  as.data.table()
+
+
+big_cities[, treat := ifelse(first.treat == 0, 0, 1)]
+big_cities[, time_to_treat := ifelse(treat==1, year - first.treat, 0)]
 
 
 # "c" stands for inflation- and regional prices-corrected

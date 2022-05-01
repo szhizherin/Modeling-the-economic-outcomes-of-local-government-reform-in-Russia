@@ -61,6 +61,14 @@ get_group <- function(treatment_history) {
   }
 }
 
+num_treated_and_never_treated <- function(data) {
+  res <- data %>% 
+    group_by(settlement) %>% 
+    summarise(type = get_group(treatment)[1]) %>% 
+    ungroup() %>% 
+    count(type)
+  return(res) 
+}
 
 big_cities <- big_cities %>% 
   group_by(oktmo) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -193,7 +201,140 @@ non_competitive_elections <- c("Чеченская республика", "Ре�
                                "Республика Саха (Якутия)", 
                                "Астраханская область", "Тульская область")
 
+non_competitive_elections_carnegie_less30 <- c("Амурская область",
+                                               "Вологодская область",
+                                               "Забайкальский край",
+                                               "Ивановская область",
+                                               "Липецкая область", 
+                                               "Магаданская область",
+                                               "Ненецкий автономный округ", 
+                                               "Республика Дагестан", 
+                                               "Омская область", 
+                                               "Орловская область", 
+                                               "Тамбовская область", 
+                                               "Ямало-Ненецкий автономный округ", 
+                                               "Карачаево-Черкесская республика", 
+                                               "Костромская область", 
+                                               "Пензенская область", 
+                                               "Республика Татарстан", 
+                                               "Республика Саха (Якутия)", 
+                                               "Брянская область", 
+                                               "Ростовская область", 
+                                               "Смоленская область", 
+                                               "Республика Хакасия", 
+                                               "Республика Адыгея", 
+                                               "Белгородская область", 
+                                               "Республика Марий Эл", 
+                                               "Республика Башкортостан", 
+                                               "Кемеровская область", 
+                                               "Курганская область", 
+                                               "Республика Тыва",
+                                               "Еврейская автономная область",
+                                               "Республика Калмыкия", 
+                                               "Республика Северная Осетия - Алания", 
+                                               "Курская область", 
+                                               "Кабардино-Балкарская республика", 
+                                               "Республика Ингушетия", 
+                                               "Республика Мордовия", 
+                                               "Чукотский автономный округ", 
+                                               "Чеченская республика")
+intersect(non_competitive_elections, non_competitive_elections_carnegie_less30) %>% length() / 20
+intersect(non_competitive_elections, non_competitive_elections_carnegie_less30) %>% length() / 37
+
+non_competitive_elections_carnegie_last30 <- c("Республика Дагестан",
+                                               "Омская область",
+                                               "Орловская область",
+                                               "Тамбовская область", 
+                                               "Ямало-Ненецкий автономный округ", 
+                                               "Карачаево-Черкесская республика", 
+                                               "Костромская область", 
+                                               "Пензенская область", 
+                                               "Республика Татарстан", 
+                                               "Республика Саха (Якутия)", 
+                                               "Брянская область", 
+                                               "Ростовская область", 
+                                               "Смоленская область", 
+                                               "Республика Хакасия", 
+                                               "Республика Адыгея", 
+                                               "Белгородская область", 
+                                               "Республика Марий Эл", 
+                                               "Республика Башкортостан", 
+                                               "Кемеровская область", 
+                                               "Курганская область", 
+                                               "Республика Тыва",
+                                               "Еврейская автономная область",
+                                               "Республика Калмыкия", 
+                                               "Республика Северная Осетия - Алания", 
+                                               "Курская область", 
+                                               "Кабардино-Балкарская республика", 
+                                               "Республика Ингушетия", 
+                                               "Республика Мордовия", 
+                                               "Чукотский автономный округ", 
+                                               "Чеченская республика")
+intersect(non_competitive_elections, non_competitive_elections_carnegie_last30) %>% length() / 20
+intersect(non_competitive_elections, non_competitive_elections_carnegie_last30) %>% length() / 30
+
 big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
+2094 - big_cities$competitive %>% sum()
+
+
+################################################################################
+
+# число отчитавшихся муниципальных предприятий с минимальным набором контролей
+y_var <- "n_mun_firms_reported"
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c")
+
+data <- big_cities %>%    
+  filter(group != "unexpected") %>%  
+  select(c("settlement", "region", "year", "treat", "first.treat", 
+           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
+
+mod_twfe = feols(n_mun_firms_reported ~ i(time_to_treat, treat, ref = -1) + 
+                   log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                   retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                   living_space + n_companies + pop_work + log_population + log_wage +
+                   workers + t8006003 + pension_c | 
+                   settlement + year, 
+                 cluster = ~region, 
+                 data = data)
+
+mod_twfe_total = feols(n_mun_firms_reported ~ treatment +       
+                         log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                         retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                         living_space + n_companies + pop_work + log_population + log_wage +
+                         workers + t8006003 + pension_c |                   
+                         settlement + year,                                           
+                       cluster = ~region,                                             
+                       data = data)
+summary(mod_twfe_total)
+
+iplot(mod_twfe, 
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment (TWFE)')
+
+mod_sa = feols(n_mun_firms_reported ~ sunab(first.treat, year) + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c | 
+                 settlement + year,  
+               cluster = ~region,  
+               data = data)
+summary(mod_sa, agg = "att")
+
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment (SA)')
+iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment')
+legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
+       legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
 ################################################################################

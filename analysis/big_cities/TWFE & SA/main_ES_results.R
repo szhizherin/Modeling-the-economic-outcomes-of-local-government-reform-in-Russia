@@ -352,6 +352,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_1_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + 

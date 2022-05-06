@@ -12,8 +12,39 @@ library(fixest)
 library(readr)
 library(tidyr)
 
-
-
+# export tables to latex
+setFixest_dict(c(t8013002_1_c_pc = "Все расходы", 
+                 t8013002_231_c_pc = "Расходы на образование",
+                 t8013002_212_c_pc = "Расходы на общегосударственные вопросы", 
+                 t8013002_229_c_pc = "Расходы на ЖКХ",
+                 t8013002_234_c_pc = "Расходы на социальную политику",
+                 t8013001_296_c_pc = "Субсидии",
+                 t8013001_294_c_pc = "Субвенции",
+                 t8013001_293_c_pc = "Дотации",
+                 t8008008_t8008007 = "Доля водопроводной сети, нуждающейся в замене",
+                 mun_debt_c_pf = "Кредиторская задолженность муниципальных организаций",
+                 investment_c_pc = "Инвестиции в основной капитал",
+                 n_mun_firms_reported = "Количество организаций муниципальной формы собственности, предоставивших отчетность",
+                 log_build_flat = "Введено в действие квартир, ln",
+                 log_new_housing = "Введено в действие жилых домов, ln",
+                 catering_c_pc = "Оборот общественного питания",
+                 construction_c_pc = "Объём строительных работ",
+                 retail_c_pc = "Оборот розничной торговли",
+                 volume_electr_c_pc = "Произведено и распределено электроэнергии, газа, воды",
+                 volume_manufact_c_pc = "Произведено в обрабатывающей промышленности",
+                 doctors_per10 = "Численность врачей",
+                 living_space = "Площадь жилья на 1 жителя",
+                 n_companies = "Число предприятий и организаций",
+                 pop_work = "Процент трудоспособного населения",
+                 log_population = "Население, ln",
+                 log_wage = "Среднемесячная заработная плата",
+                 workers = "Численность работников организаций",
+                 t8006003 = "Протяжённость освещённых частей улиц",
+                 pension_c = "Средний размер пенсий",
+                 pupils_per_1000 = "Число учащихся в школах",
+                 schools_per_1000 = "Число школ",
+                 settlement = "Город",
+                 year = "Год"))
 
 big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
 BDMO_id_name <- read_csv("intermediate_data/BDMO_id_name.csv") %>% select(-c(1))
@@ -80,7 +111,7 @@ big_cities$construction_c <- big_cities$construction * big_cities$index
 big_cities$pension_c <- big_cities$pension * big_cities$index
 big_cities$retail_c <- big_cities$retail * big_cities$index
 big_cities$wage_c <- big_cities$wage * big_cities$index
-big_cities$investment_c <- big_cities$investment * big_cities$index
+big_cities$investment_c <- big_cities$investment * big_cities$index * 1000
 big_cities$volume_electr_c <- big_cities$volume_electr * big_cities$index
 big_cities$volume_manufact_c <- big_cities$volume_manufact * big_cities$index
 
@@ -257,6 +288,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_1_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -312,6 +344,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_231_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -344,7 +377,7 @@ mod_sa = feols(t8013002_231_c_pc ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -367,6 +400,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_212_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -399,7 +433,7 @@ mod_sa = feols(t8013002_212_c_pc ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -422,6 +456,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_229_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -454,7 +489,7 @@ mod_sa = feols(t8013002_229_c_pc ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -477,6 +512,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013002_234_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -509,7 +545,7 @@ mod_sa = feols(t8013002_234_c_pc ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -642,6 +678,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(investment_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -674,7 +711,7 @@ mod_sa = feols(investment_c_pc ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -752,6 +789,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8008008_t8008007 ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -784,7 +822,7 @@ mod_sa = feols(t8008008_t8008007 ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -1027,6 +1065,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_296_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -1059,7 +1098,7 @@ mod_sa = feols(t8013001_296_c_pc ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -1082,6 +1121,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_294_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -1114,7 +1154,7 @@ mod_sa = feols(t8013001_294_c_pc ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -1137,6 +1177,7 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_293_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
@@ -1169,8 +1210,12 @@ mod_sa = feols(t8013001_293_c_pc ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment')
@@ -1335,7 +1380,7 @@ mod_sa = feols(mun_debt_c_pf ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -1447,7 +1492,7 @@ mod_sa = feols(n_mun_firms_reported ~ sunab(first.treat, year) +
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',

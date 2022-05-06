@@ -12,7 +12,40 @@ library(fixest)
 library(readr)
 library(tidyr)
 
-
+# export tables to latex
+setFixest_dict(c(t8013002_1_c_pc = "Все расходы", 
+                 t8013002_231_c_pc = "Расходы на образование",
+                 t8013002_212_c_pc = "Расходы на общегосударственные вопросы", 
+                 t8013002_229_c_pc = "Расходы на ЖКХ",
+                 t8013002_234_c_pc = "Расходы на социальную политику",
+                 t8013001_296_c_pc = "Субсидии",
+                 t8013001_294_c_pc = "Субвенции",
+                 t8013001_293_c_pc = "Дотации",
+                 t8008008_t8008007 = "Доля водопроводной сети, нуждающейся в замене",
+                 mun_debt_c_pf = "Кредиторская задолженность муниципальных организаций",
+                 investment_c_pc = "Инвестиции в основной капитал",
+                 n_mun_firms_reported = "Количество организаций муниципальной формы собственности, предоставивших отчетность",
+                 log_build_flat = "Введено в действие квартир, ln",
+                 log_new_housing = "Введено в действие жилых домов, ln",
+                 catering_c_pc = "Оборот общественного питания",
+                 construction_c_pc = "Объём строительных работ",
+                 retail_c_pc = "Оборот розничной торговли",
+                 volume_electr_c_pc = "Произведено и распределено электроэнергии, газа, воды",
+                 volume_manufact_c_pc = "Произведено в обрабатывающей промышленности",
+                 doctors_per10 = "Численность врачей",
+                 living_space = "Площадь жилья на 1 жителя",
+                 n_companies = "Число предприятий и организаций",
+                 pop_work = "Процент трудоспособного населения",
+                 log_population = "Население, ln",
+                 log_wage = "Среднемесячная заработная плата",
+                 workers = "Численность работников организаций",
+                 t8006003 = "Протяжённость освещённых частей улиц",
+                 pension_c = "Средний размер пенсий",
+                 pupils_per_1000 = "Число учащихся в школах",
+                 schools_per_1000 = "Число школ",
+                 settlement = "Город",
+                 year = "Год",
+                 treatment = "Смена модели"))
 
 
 big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
@@ -366,7 +399,7 @@ intersect(non_competitive_elections, non_competitive_elections_carnegie_last20) 
 non_competitive_elections_carnegie_less30_without_20 <- 
   setdiff(non_competitive_elections_carnegie_less30, non_competitive_elections) # не султанаты среди 37 худших центра Карнеги
 
-big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections_carnegie_last30)
+big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
 2094 - big_cities$competitive %>% sum()
 
 
@@ -421,7 +454,7 @@ mod_sa = feols(t8013002_1_c_pc ~ sunab(first.treat*(1-competitive), year) + trea
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 wald(mod_sa, keep = "year::-[2]")
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
@@ -481,7 +514,7 @@ mod_sa = feols(t8013002_231_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -537,7 +570,7 @@ mod_sa = feols(t8013002_212_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
@@ -596,7 +629,7 @@ mod_sa = feols(t8013002_229_c_pc ~ sunab(first.treat*(1-competitive), year, ref.
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
@@ -655,7 +688,7 @@ mod_sa = feols(t8013002_234_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
@@ -1236,7 +1269,7 @@ mod_sa = feols(t8013001_296_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
@@ -1256,13 +1289,13 @@ cov_vars <- c("log_build_flat",
               "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
               "living_space", "n_companies", "pop_work", "log_population", "log_wage",
               "workers", "t8006003", "pension_c")
-data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 data <- big_cities %>%    
   filter(group != "unexpected") %>%  
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8013001_294_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + 
@@ -1295,7 +1328,7 @@ mod_sa = feols(t8013001_294_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
@@ -1322,6 +1355,8 @@ data <- big_cities %>%
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
 data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
+(data %>% filter(competitive == 0))$t8013001_293_c_pc %>% mean(na.rm = T)
+(data %>% filter(competitive == 1))$t8013001_293_c_pc %>% mean(na.rm = T)
 
 mod_twfe = feols(t8013001_293_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat +
@@ -1354,7 +1389,7 @@ mod_sa = feols(t8013001_293_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',

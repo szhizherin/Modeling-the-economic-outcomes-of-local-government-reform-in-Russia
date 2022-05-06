@@ -13,8 +13,6 @@ library(readr)
 library(tidyr)
 
 
-
-
 big_cities <- read_csv("final_data/big_cities.csv") %>% select(-c(1))
 BDMO_id_name <- read_csv("intermediate_data/BDMO_id_name.csv") %>% select(-c(1))
 
@@ -72,7 +70,6 @@ num_treated_and_never_treated <- function(data) {
 
 big_cities <- big_cities %>% 
   group_by(oktmo) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
-
 
 # "c" stands for inflation- and regional prices-corrected
 big_cities$catering_c <- big_cities$catering * big_cities$index
@@ -274,7 +271,7 @@ non_competitive_elections_carnegie_last30 <- c("Республика Дагес�
 intersect(non_competitive_elections, non_competitive_elections_carnegie_last30) %>% length() / 20
 intersect(non_competitive_elections, non_competitive_elections_carnegie_last30) %>% length() / 30
 
-big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
+big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections_carnegie_less30)
 2094 - big_cities$competitive %>% sum()
 
 
@@ -328,8 +325,9 @@ mod_sa = feols(n_mun_firms_reported ~ sunab(first.treat, year) +
 summary(mod_sa, agg = "att")
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
-      xlab = 'Time to treatment',
-      main = 'Event study: Staggered treatment (SA)')
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment')
@@ -388,9 +386,12 @@ mod_sa = feols(t8013002_1_c_pc ~ sunab(first.treat*(1-competitive), year) + trea
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
-mod_sa %>% summary(agg = F)
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (SA)')
@@ -490,8 +491,12 @@ mod_sa = feols(t8013002_212_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (SA)')
@@ -591,8 +596,12 @@ mod_sa = feols(t8013002_229_c_pc ~ sunab(first.treat*(1-competitive), year, ref.
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (SA)')
@@ -994,8 +1003,12 @@ mod_sa = feols(t8013001_296_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (SA)')
@@ -1095,8 +1108,12 @@ mod_sa = feols(t8013001_294_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (SA)')
@@ -1196,8 +1213,12 @@ mod_sa = feols(t8013001_293_c_pc ~ sunab(first.treat*(1-competitive), year) + tr
                  settlement + year,  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (SA)')
@@ -1255,7 +1276,7 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
 
 # доходы от НДФЛ душу с претрендами | competitive
 y_var <- "t8013001_5_c_pc" # 1 %
-cov_vars <- c("log_build_flat", 
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
               "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
               "living_space", "n_companies", "pop_work", "log_population", "log_wage",
               "workers", "t8006003", "pension_c")
@@ -1265,9 +1286,10 @@ data <- big_cities %>%
   select(c("settlement", "region", "year", "treat", "first.treat", 
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
-
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
+  
 mod_twfe = feols(t8013001_5_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
-                   log_build_flat + 
+                   log_build_flat + log_new_housing + catering_c_pc + construction_c_pc + 
                    retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
                    living_space + n_companies + pop_work + log_population + log_wage +
                    workers + t8006003 + pension_c | 
@@ -1276,7 +1298,7 @@ mod_twfe = feols(t8013001_5_c_pc ~ i(time_to_treat*(1-competitive), treat, ref =
                  data = data)
 
 mod_twfe_total = feols(t8013001_5_c_pc ~ i(treatment, competitive, 1) + treatment + 
-                         log_build_flat + 
+                         log_build_flat + log_new_housing + catering_c_pc + construction_c_pc + 
                          retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
                          living_space + n_companies + pop_work + log_population + log_wage +
                          workers + t8006003 + pension_c |                   
@@ -1290,7 +1312,7 @@ iplot(mod_twfe,
       main = 'Event study: Staggered treatment (TWFE)')
 
 mod_sa = feols(t8013001_5_c_pc ~ sunab(first.treat*(1-competitive), year) + treatment +
-                 log_build_flat + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc + 
                  retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
                  living_space + n_companies + pop_work + log_population + log_wage +
                  workers + t8006003 + pension_c | 

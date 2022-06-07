@@ -278,7 +278,11 @@ data %>% stargazer(type = "latex", digits = 1, style = "aer", summary.stat = c("
 
 
 
+# статистические аномалии
+(big_cities %>% filter(settlement != "Назрань"))$t8013002_212_c_pc %>% max(na.rm = T)
+big_cities %>% select(settlement, year, group, t8013002_212_c_pc) %>% View()
 
+big_cities %>% filter(settlement == "Назрань") %>%  select(settlement, year, group, t8013002_212_c_pc) %>% View()
 
 
 

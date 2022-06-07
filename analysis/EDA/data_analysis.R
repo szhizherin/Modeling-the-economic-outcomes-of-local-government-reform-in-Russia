@@ -167,7 +167,6 @@ p
 #########################################################################
 
 
-memory.limit(size=25000)
 
 BDMO_variables <- read_csv("raw_data/BDMO_01012018/BDMO variables.csv")
 BDMO <- read_csv("raw_data/BDMO_01012018/1 indicator clean v2.csv")

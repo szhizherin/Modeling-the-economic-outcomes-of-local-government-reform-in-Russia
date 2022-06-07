@@ -360,7 +360,7 @@ non_competitive_elections_carnegie_less30_without_20 <-
     setdiff(non_competitive_elections_carnegie_less30, non_competitive_elections) # не султанаты среди 37 худших центра Карнеги
                                                                                   # значима только доля расходов на правоохранителей на 5% уровне
   
-big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections_carnegie_less30)
+big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
 2094 - big_cities$competitive %>% sum()
 ################################################################################
 

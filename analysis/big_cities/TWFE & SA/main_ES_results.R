@@ -1287,7 +1287,32 @@ data <- big_cities %>%
            "time_to_treat", "treatment", "competitive", y_var, all_of(cov_vars))) %>% 
   drop_na() %>% as.data.frame()
 data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
-  
+
+data %>% group_by(settlement) %>% mutate(group = get_group(treatment)) %>% #ungroup() %>% 
+    filter(group == "0 -> 1" & competitive == 0) %>% summarise(avg = mean(t8013001_5_c_pc))
+
+# важный график
+data %>% group_by(settlement) %>% mutate(group = get_group(treatment)) %>% 
+  filter(group == "0 -> 1" & competitive == 0) %>% 
+  group_by(year) %>% summarise(avg = mean(t8013001_5_c_pc)) %>% plot(type = "b",
+                                                                     pch = 2,
+                                                                     ylim = c(1500, 6500),
+                                                                     cex = 1.5,
+                                                                     xlab = "", 
+                                                                     ylab = "")
+
+data %>% group_by(settlement) %>% mutate(group = get_group(treatment)) %>%  
+  filter(group == "0" | competitive == 1) %>% 
+  group_by(year) %>% summarise(avg = mean(t8013001_5_c_pc)) %>% lines(type = "b", cex=1.5)
+legend(2012, 6500, legend=c("Группа воздействия", "Контрольная группа"), pch=c(2,1), cex=1)
+
+
+data %>% group_by(settlement) %>% mutate(group = get_group(treatment)) %>% 
+  filter(group == "0 -> 1" & competitive == 0) %>% 
+  select(settlement, year, treatment, t8013001_5_c_pc) %>% View()
+
+# data$treatment <- data$treatment * (1 - data$competitive)
+# data %>% num_treated_and_never_treated()
 mod_twfe = feols(t8013001_5_c_pc ~ i(time_to_treat*(1-competitive), treat, ref = -1) + treatment +
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc + 
                    retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
@@ -1319,8 +1344,12 @@ mod_sa = feols(t8013001_5_c_pc ~ sunab(first.treat*(1-competitive), year) + trea
                  settlement + year + year[competitive],  
                cluster = ~region,  
                data = data)
-summary(mod_sa, agg = "att")
+summary(mod_sa, agg = "att") %>% etable(tex = T)
 
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (SA)')

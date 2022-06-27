@@ -37666,3 +37666,32 @@ ids: {1727, 1728, 1729, 1730, 1731, 1732, 1733, 1734, 1735, 1736, 1737, 1738, 17
 2022-06-27 09:50:22,920 [4292] DEBUG    root:195: [JupyterRequire] Configuration requested: {'paths': {}, 'shim': None}
 2022-06-27 09:50:22,935 [4292] INFO     root:271: [JupyterRequire] Comms have been successfully initialized.
 2022-06-27 09:50:22,935 [4292] DEBUG    root:97: [JupyterRequire] Registering comm targets.
+2022-06-27 10:32:56,049 [4292] DEBUG    root:75: [JupyterRequire] Loading Jupyter Require extension.
+2022-06-27 10:32:56,049 [4292] DEBUG    root:93: [JupyterRequire] Initializing comms.
+2022-06-27 10:32:56,049 [4292] INFO     root:247: [JupyterRequire] Initializing comms.
+2022-06-27 10:32:56,080 [4292] DEBUG    root:195: [JupyterRequire] Configuration requested: {'paths': {}, 'shim': None}
+2022-06-27 10:32:56,096 [4292] INFO     root:271: [JupyterRequire] Comms have been successfully initialized.
+2022-06-27 10:32:56,096 [4292] DEBUG    root:97: [JupyterRequire] Registering comm targets.
+2022-06-27 11:18:54,597 [4292] DEBUG    root:75: [JupyterRequire] Loading Jupyter Require extension.
+2022-06-27 11:18:54,615 [4292] DEBUG    root:93: [JupyterRequire] Initializing comms.
+2022-06-27 11:18:54,615 [4292] INFO     root:247: [JupyterRequire] Initializing comms.
+2022-06-27 11:18:54,639 [4292] DEBUG    root:195: [JupyterRequire] Configuration requested: {'paths': {}, 'shim': None}
+2022-06-27 11:18:54,639 [4292] INFO     root:271: [JupyterRequire] Comms have been successfully initialized.
+2022-06-27 11:18:54,639 [4292] DEBUG    root:97: [JupyterRequire] Registering comm targets.
+2022-06-27 12:36:31,454 [13672] DEBUG    root:75: [JupyterRequire] Loading Jupyter Require extension.
+2022-06-27 12:36:31,455 [13672] DEBUG    root:93: [JupyterRequire] Initializing comms.
+2022-06-27 12:36:31,455 [13672] INFO     root:247: [JupyterRequire] Initializing comms.
+2022-06-27 12:36:31,462 [13672] DEBUG    root:195: [JupyterRequire] Configuration requested: {'paths': {}, 'shim': None}
+2022-06-27 12:36:31,465 [13672] INFO     root:271: [JupyterRequire] Comms have been successfully initialized.
+2022-06-27 12:36:31,465 [13672] DEBUG    root:97: [JupyterRequire] Registering comm targets.
+2022-06-27 12:36:32,269 [13672] DEBUG    root:75: [JupyterRequire] Loading Jupyter Require extension.
+2022-06-27 12:36:32,270 [13672] DEBUG    root:93: [JupyterRequire] Initializing comms.
+2022-06-27 12:36:32,270 [13672] INFO     root:247: [JupyterRequire] Initializing comms.
+2022-06-27 12:36:32,278 [13672] DEBUG    root:195: [JupyterRequire] Configuration requested: {'paths': {}, 'shim': None}
+2022-06-27 12:36:32,279 [13672] INFO     root:271: [JupyterRequire] Comms have been successfully initialized.
+2022-06-27 12:36:32,280 [13672] DEBUG    root:97: [JupyterRequire] Registering comm targets.
+2022-06-27 12:38:00,089 [13672] INFO     numexpr.utils:157: [JupyterRequire] NumExpr defaulting to 4 threads.
+2022-06-27 12:38:08,454 [13672] INFO     pymorphy2.opencorpora_dict.wrapper:16: [JupyterRequire] Loading dictionaries from C:\Users\mi\anaconda3\lib\site-packages\pymorphy2_dicts_ru\data
+2022-06-27 12:38:08,579 [13672] INFO     pymorphy2.opencorpora_dict.wrapper:20: [JupyterRequire] format: 2.4, revision: 417127, updated: 2020-10-11T15:05:51.070345
+2022-06-27 12:38:08,834 [13672] INFO     pymorphy2.opencorpora_dict.wrapper:16: [JupyterRequire] Loading dictionaries from C:\Users\mi\anaconda3\lib\site-packages\pymorphy2_dicts_ru\data
+2022-06-27 12:38:08,886 [13672] INFO     pymorphy2.opencorpora_dict.wrapper:20: [JupyterRequire] format: 2.4, revision: 417127, updated: 2020-10-11T15:05:51.070345

@@ -37,6 +37,22 @@ big_cities_with_openness <- openness_oktmo %>%
   inner_join(big_cities, by = c("oktmo" = "oktmo", 
                                "year" = "year"))
 
+# first year of treatment for each municipality
+big_cities_with_openness$first.treat = big_cities_with_openness$treatment * big_cities_with_openness$year
+
+big_cities_with_openness <- big_cities_with_openness %>% 
+  mutate(first.treat = case_when(first.treat == 0 ~ Inf,
+                                 first.treat != 0 ~ first.treat))
+
+big_cities_with_openness <- big_cities_with_openness %>% 
+  group_by(oktmo) %>% 
+  mutate(first.treat = min(first.treat, na.rm = T)) %>% 
+  ungroup()
+
+big_cities_with_openness <- big_cities_with_openness %>% 
+  mutate(first.treat = case_when(first.treat == Inf ~ 0,
+                                 first.treat != Inf ~ first.treat))
+
 big_cities$oktmo %>% unique() %>% length()
 big_cities_with_openness$oktmo %>% unique() %>% length()
 

@@ -37695,3 +37695,9 @@ ids: {1727, 1728, 1729, 1730, 1731, 1732, 1733, 1734, 1735, 1736, 1737, 1738, 17
 2022-06-27 12:38:08,579 [13672] INFO     pymorphy2.opencorpora_dict.wrapper:20: [JupyterRequire] format: 2.4, revision: 417127, updated: 2020-10-11T15:05:51.070345
 2022-06-27 12:38:08,834 [13672] INFO     pymorphy2.opencorpora_dict.wrapper:16: [JupyterRequire] Loading dictionaries from C:\Users\mi\anaconda3\lib\site-packages\pymorphy2_dicts_ru\data
 2022-06-27 12:38:08,886 [13672] INFO     pymorphy2.opencorpora_dict.wrapper:20: [JupyterRequire] format: 2.4, revision: 417127, updated: 2020-10-11T15:05:51.070345
+2022-06-27 15:03:18,670 [13672] DEBUG    root:75: [JupyterRequire] Loading Jupyter Require extension.
+2022-06-27 15:03:18,686 [13672] DEBUG    root:93: [JupyterRequire] Initializing comms.
+2022-06-27 15:03:18,686 [13672] INFO     root:247: [JupyterRequire] Initializing comms.
+2022-06-27 15:03:18,717 [13672] DEBUG    root:195: [JupyterRequire] Configuration requested: {'paths': {}, 'shim': None}
+2022-06-27 15:03:18,717 [13672] INFO     root:271: [JupyterRequire] Comms have been successfully initialized.
+2022-06-27 15:03:18,717 [13672] DEBUG    root:97: [JupyterRequire] Registering comm targets.

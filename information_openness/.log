@@ -37660,3 +37660,9 @@ name: Новосибирская область
 score: 0.9068865647072084
 ids: {1727, 1728, 1729, 1730, 1731, 1732, 1733, 1734, 1735, 1736, 1737, 1738, 1739, 1740, 1741, 1742, 1743, 1744, 1745, 1746, 1747, 1748, 1749, 1750, 1751, 1752, 1753, 1754, 1755, 1756, 1757, 1758, 1759, 1760, 1761, 1762, 1763, 1764, 1765, 1766, 1767}
 
+2022-06-27 09:50:22,889 [4292] DEBUG    root:75: [JupyterRequire] Loading Jupyter Require extension.
+2022-06-27 09:50:22,889 [4292] DEBUG    root:93: [JupyterRequire] Initializing comms.
+2022-06-27 09:50:22,889 [4292] INFO     root:247: [JupyterRequire] Initializing comms.
+2022-06-27 09:50:22,920 [4292] DEBUG    root:195: [JupyterRequire] Configuration requested: {'paths': {}, 'shim': None}
+2022-06-27 09:50:22,935 [4292] INFO     root:271: [JupyterRequire] Comms have been successfully initialized.
+2022-06-27 09:50:22,935 [4292] DEBUG    root:97: [JupyterRequire] Registering comm targets.

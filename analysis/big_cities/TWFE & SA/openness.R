@@ -286,7 +286,7 @@ big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections
 ################################################################################
 
 # рейтинг информационной открытости
-y_var <- "rating"
+y_var <- "rating_IO"
 cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
               "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
               "living_space", "n_companies", "pop_work", "log_population", "log_wage",
@@ -299,7 +299,7 @@ data <- big_cities %>%
   drop_na() %>% as.data.frame()
 data %>% num_treated_and_never_treated()
 
-mod_twfe = feols(rating ~ i(time_to_treat, treat, ref = -1) + 
+mod_twfe = feols(rating_IO ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
                    retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
                    living_space + n_companies + pop_work + log_population + log_wage +
@@ -308,7 +308,7 @@ mod_twfe = feols(rating ~ i(time_to_treat, treat, ref = -1) +
                  cluster = ~region, 
                  data = data)
 
-mod_twfe_total = feols(rating ~ treatment +       
+mod_twfe_total = feols(rating_IO ~ treatment +       
                          log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
                          retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
                          living_space + n_companies + pop_work + log_population + log_wage +
@@ -322,7 +322,7 @@ iplot(mod_twfe,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (TWFE)')
 
-mod_sa = feols(rating ~ sunab(first.treat, year) + 
+mod_sa = feols(rating_IO ~ sunab(first.treat, year) + 
                  log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
                  retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
                  living_space + n_companies + pop_work + log_population + log_wage +
@@ -345,9 +345,12 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
 
 ################################################################################
 
-# рейтинг информационной открытости
-y_var <- "rating"
-cov_vars <- c()
+# общая информация
+y_var <- "general_information_IO"
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c")
 
 data <- big_cities %>%    
   filter(group != "unexpected") %>%  
@@ -356,12 +359,20 @@ data <- big_cities %>%
   drop_na() %>% as.data.frame()
 data %>% num_treated_and_never_treated()
 
-mod_twfe = feols(rating ~ i(time_to_treat, treat, ref = -1) | 
+mod_twfe = feols(general_information_IO ~ i(time_to_treat, treat, ref = -1) + 
+                   log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                   retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                   living_space + n_companies + pop_work + log_population + log_wage +
+                   workers + t8006003 + pension_c | 
                    settlement + year, 
                  cluster = ~region, 
                  data = data)
 
-mod_twfe_total = feols(rating ~ treatment |                   
+mod_twfe_total = feols(general_information_IO ~ treatment +       
+                         log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                         retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                         living_space + n_companies + pop_work + log_population + log_wage +
+                         workers + t8006003 + pension_c |                   
                          settlement + year,                                           
                        cluster = ~region,                                             
                        data = data)
@@ -371,7 +382,11 @@ iplot(mod_twfe,
       xlab = 'Time to treatment',
       main = 'Event study: Staggered treatment (TWFE)')
 
-mod_sa = feols(rating ~ sunab(first.treat, year) | 
+mod_sa = feols(general_information_IO ~ sunab(first.treat, year) + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c | 
                  settlement + year,  
                cluster = ~region,  
                data = data)
@@ -386,3 +401,304 @@ iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       main = 'Event study: Staggered treatment')
 legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
+################################################################################
+
+# информация о госзадании
+y_var <- "gov_assignment_info_IO"
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c")
+
+data <- big_cities %>%    
+  filter(group != "unexpected") %>%  
+  select(c("settlement", "region", "year", "treat", "first.treat", 
+           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
+
+mod_twfe = feols(gov_assignment_info_IO ~ i(time_to_treat, treat, ref = -1) + 
+                   log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                   retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                   living_space + n_companies + pop_work + log_population + log_wage +
+                   workers + t8006003 + pension_c | 
+                   settlement + year, 
+                 cluster = ~region, 
+                 data = data)
+
+mod_twfe_total = feols(gov_assignment_info_IO ~ treatment +       
+                         log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                         retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                         living_space + n_companies + pop_work + log_population + log_wage +
+                         workers + t8006003 + pension_c |                   
+                         settlement + year,                                           
+                       cluster = ~region,                                             
+                       data = data)
+summary(mod_twfe_total)
+
+iplot(mod_twfe, 
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment (TWFE)')
+
+mod_sa = feols(gov_assignment_info_IO ~ sunab(first.treat, year) + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c | 
+                 settlement + year,  
+               cluster = ~region,  
+               data = data)
+summary(mod_sa, agg = "att")
+
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
+iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment')
+legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
+       legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
+################################################################################
+
+# информация о качестве услуг
+y_var <- "services_quality_IO"
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c")
+
+data <- big_cities %>%    
+  filter(group != "unexpected") %>%  
+  select(c("settlement", "region", "year", "treat", "first.treat", 
+           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
+
+mod_twfe = feols(services_quality_IO ~ i(time_to_treat, treat, ref = -1) + 
+                   log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                   retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                   living_space + n_companies + pop_work + log_population + log_wage +
+                   workers + t8006003 + pension_c | 
+                   settlement + year, 
+                 cluster = ~region, 
+                 data = data)
+
+mod_twfe_total = feols(services_quality_IO ~ treatment +       
+                         log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                         retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                         living_space + n_companies + pop_work + log_population + log_wage +
+                         workers + t8006003 + pension_c |                   
+                         settlement + year,                                           
+                       cluster = ~region,                                             
+                       data = data)
+summary(mod_twfe_total)
+
+iplot(mod_twfe, 
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment (TWFE)')
+
+mod_sa = feols(services_quality_IO ~ sunab(first.treat, year) + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c | 
+                 settlement + year,  
+               cluster = ~region,  
+               data = data)
+summary(mod_sa, agg = "att")
+
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
+iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment')
+legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
+       legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
+################################################################################
+
+# информация об объеме услуг
+y_var <- "services_quantity_IO"
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c")
+
+data <- big_cities %>%    
+  filter(group != "unexpected") %>%  
+  select(c("settlement", "region", "year", "treat", "first.treat", 
+           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
+
+mod_twfe = feols(services_quantity_IO ~ i(time_to_treat, treat, ref = -1) + 
+                   log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                   retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                   living_space + n_companies + pop_work + log_population + log_wage +
+                   workers + t8006003 + pension_c | 
+                   settlement + year, 
+                 cluster = ~region, 
+                 data = data)
+
+mod_twfe_total = feols(services_quantity_IO ~ treatment +       
+                         log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                         retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                         living_space + n_companies + pop_work + log_population + log_wage +
+                         workers + t8006003 + pension_c |                   
+                         settlement + year,                                           
+                       cluster = ~region,                                             
+                       data = data)
+summary(mod_twfe_total)
+
+iplot(mod_twfe, 
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment (TWFE)')
+
+mod_sa = feols(services_quantity_IO ~ sunab(first.treat, year) + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c | 
+                 settlement + year,  
+               cluster = ~region,  
+               data = data)
+summary(mod_sa, agg = "att")
+
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
+iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment')
+legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
+       legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
+################################################################################
+
+# информация о ПФХД
+y_var <- "budget_info_IO"
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c")
+
+data <- big_cities %>%    
+  filter(group != "unexpected") %>%  
+  select(c("settlement", "region", "year", "treat", "first.treat", 
+           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
+
+mod_twfe = feols(budget_info_IO ~ i(time_to_treat, treat, ref = -1) + 
+                   log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                   retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                   living_space + n_companies + pop_work + log_population + log_wage +
+                   workers + t8006003 + pension_c | 
+                   settlement + year, 
+                 cluster = ~region, 
+                 data = data)
+
+mod_twfe_total = feols(budget_info_IO ~ treatment +       
+                         log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                         retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                         living_space + n_companies + pop_work + log_population + log_wage +
+                         workers + t8006003 + pension_c |                   
+                         settlement + year,                                           
+                       cluster = ~region,                                             
+                       data = data)
+summary(mod_twfe_total)
+
+iplot(mod_twfe, 
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment (TWFE)')
+
+mod_sa = feols(budget_info_IO ~ sunab(first.treat, year) + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c | 
+                 settlement + year,  
+               cluster = ~region,  
+               data = data)
+summary(mod_sa, agg = "att")
+
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
+iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment')
+legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
+       legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
+################################################################################
+
+# число организаций в рейтинге
+y_var <- "total_organisations_IO"
+cov_vars <- c("log_build_flat", "log_new_housing", "catering_c_pc", "construction_c_pc",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c")
+
+data <- big_cities %>%    
+  filter(group != "unexpected") %>%  
+  select(c("settlement", "region", "year", "treat", "first.treat", 
+           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% as.data.frame()
+data %>% num_treated_and_never_treated()
+
+mod_twfe = feols(total_organisations_IO ~ i(time_to_treat, treat, ref = -1) + 
+                   log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                   retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                   living_space + n_companies + pop_work + log_population + log_wage +
+                   workers + t8006003 + pension_c | 
+                   settlement + year, 
+                 cluster = ~region, 
+                 data = data)
+
+mod_twfe_total = feols(total_organisations_IO ~ treatment +       
+                         log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                         retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                         living_space + n_companies + pop_work + log_population + log_wage +
+                         workers + t8006003 + pension_c |                   
+                         settlement + year,                                           
+                       cluster = ~region,                                             
+                       data = data)
+summary(mod_twfe_total)
+
+iplot(mod_twfe, 
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment (TWFE)')
+
+mod_sa = feols(total_organisations_IO ~ sunab(first.treat, year) + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c | 
+                 settlement + year,  
+               cluster = ~region,  
+               data = data)
+summary(mod_sa, agg = "att")
+
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
+iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
+      xlab = 'Time to treatment',
+      main = 'Event study: Staggered treatment')
+legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
+       legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+

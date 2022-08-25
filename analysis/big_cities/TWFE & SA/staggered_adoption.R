@@ -371,22 +371,11 @@ data <- big_cities %>%
 
 data %>% num_treated_and_never_treated()
 
-mod_twfe = feols(n_mun_firms_reported ~ i(time_to_treat, treat, ref = -1)  | 
-                   settlement + year, 
-                 cluster = ~region, 
-                 data = data)
-
-mod_twfe_total = feols(n_mun_firms_reported ~ treatment  |                   
-                         settlement + year,                                           
-                       cluster = ~region,                                             
-                       data = data)
-summary(mod_twfe_total)
-
-iplot(mod_twfe, 
-      xlab = 'Time to treatment',
-      main = 'Event study: Staggered treatment (TWFE)')
-
-mod_sa = feols(n_mun_firms_reported ~ sunab(first.treat, year) | 
+mod_sa = feols(n_mun_firms_reported ~ sunab(first.treat, year) + 
+                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c | 
                  settlement + year,  
                cluster = ~region,  
                data = data)
@@ -396,55 +385,18 @@ iplot(mod_sa, ci_level = 0.99, ref.line = -1,
       xlab = 'Время относительно смены модели',
       main = "",
       value.lab = "")
-iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
-      xlab = 'Time to treatment',
-      main = 'Event study: Staggered treatment')
-legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
-       legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
-
-
-out <- att_gt(yname = y_var,
-              gname = "first.treat",
-              idname = "oktmo",
-              tname = "year",
-              xformla = ~ log_build_flat + 
-                retail_c_pc + volume_electr_c_pc + 
-                log_population + log_wage +
-                workers + t8006003 + pension_c,
-              data = data,
-              est_method = "reg",
-              #clustervars = "region",
-              control_group="notyettreated",
-              base_period = "universal",
-              #bstrap = F,
-              #cband = F
-              allow_unbalanced_panel = T
-)
-
-out %>% summary()
-es <- aggte(out, type = "dynamic", na.rm = T)
-ggdid(es)
-es %>% summary()
-group_effects <- aggte(out, type = "group", na.rm = T)
-ggdid(group_effects)
-ggdid(out)
 
 res = event_study(
   data = data, yname = y_var, idname = "oktmo",
   tname = "year", gname = "first.treat", estimator = c("all"),
-  xformla = ~ log_build_flat + 
-    retail_c_pc + volume_electr_c_pc + 
-    log_population + log_wage +
+  xformla = ~ log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
+    retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+    living_space + n_companies + pop_work + log_population + log_wage +
     workers + t8006003 + pension_c
 )
 
 plot_event_study(res, horizon = c(-5,10))
 
-data$year %>% unique()
-data$year %>% min()
-
-data$first.treat %>% unique()
-data$first.treat %>% min()
 
 ################################################################################
 
@@ -511,6 +463,65 @@ iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1, ci_level = 0.99,
       main = 'Event study: Staggered treatment')
 legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
+
+y_var <- "t8013002_1_c_pc"
+cov_vars <- c("log_build_flat",
+              "retail_c_pc", "volume_electr_c_pc", "volume_manufact_c_pc", "doctors_per10",
+              "living_space", "n_companies", "pop_work", "log_population", "log_wage",
+              "workers", "t8006003", "pension_c", "schools_per_1000", "pupils_per_1000",
+              "t8006007")
+
+data <- big_cities %>%    
+  select(c("settlement", "region", "year", "treat", "first.treat", "oktmo", "competitive",
+           "time_to_treat", "treatment", "treatment_status", y_var, all_of(cov_vars))) %>% 
+  drop_na() %>% 
+  as.data.frame() %>% 
+  group_by(oktmo) %>% 
+  mutate(group = get_group(treatment_status)) %>% 
+  ungroup() %>% 
+  filter(!(group %in% c("unexpected", "1 -> 2", "1", "2"))) %>% 
+  group_by(oktmo) %>% 
+  mutate(first.treat = get_first.treat(treatment, year)) %>% 
+  ungroup() %>% 
+  mutate(first.treat.nc = first.treat*(1-competitive)) %>%
+  mutate(treat = ifelse(first.treat == 0, 0, 1)) %>% 
+  mutate(time_to_treat = ifelse(treat==1, year - first.treat, 0))
+
+data %>% num_treated_and_never_treated()
+data %>% mutate(treatment = treatment * (1 - competitive)) %>% num_treated_and_never_treated()
+data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
+data %>% filter(competitive == 1) %>% num_treated_and_never_treated()
+
+mod_sa = feols(t8013002_1_c_pc ~ sunab(first.treat*(1-competitive), year) + treatment +
+                 log_build_flat  + 
+                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+                 living_space + n_companies + pop_work + log_population + log_wage +
+                 workers + t8006003 + pension_c + schools_per_1000 + pupils_per_1000 +
+                 t8006007 | 
+                 settlement + year,  
+               cluster = ~region,  
+               data = data)
+summary(mod_sa, agg = "att")
+
+iplot(mod_sa, ci_level = 0.99, ref.line = -1,
+      xlab = 'Время относительно смены модели',
+      main = "",
+      value.lab = "")
+
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat.nc", estimator = c("all"),
+  xformla = ~ log_build_flat  + 
+    retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
+    living_space + n_companies + pop_work + log_population + log_wage +
+    workers + t8006003 + pension_c + schools_per_1000 + pupils_per_1000 +
+    t8006007
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 
 ################################################################################
 

@@ -11,7 +11,7 @@ library(dplyr)
 library(fixest)
 library(readr)
 library(tidyr)
-
+library(did2s)
 
 
 
@@ -61,6 +61,61 @@ get_group <- function(treatment_history) {
   }
 }
 
+get_first.treat <- function(treatment, year) {
+  # this function returns first year of treatment for a group
+  # based on its treatment history assuming treatment history
+  # is a vector of 0 and 1
+  # for always treated returns min(year)
+  
+  if (get_group(treatment) %in% c("unexpected")) {
+    return("unexpected")
+  }
+  else {
+    
+    # first year of treatment for each municipality
+    first.treat = treatment * year
+    
+    first.treat = case_when(first.treat == 0 ~ Inf,
+                            first.treat != 0 ~ first.treat)
+    
+    first.treat = min(first.treat, na.rm = T)
+    
+    first.treat = case_when(first.treat == Inf ~ 0,
+                            first.treat != Inf ~ first.treat)
+    return(first.treat)
+  }
+}
+
+
+get_estimation_data <- function(raw_data, y_var, cov_vars) {
+  data <- raw_data %>%    
+    select(c("settlement", "region", "year", "treat", "first.treat", "oktmo", "competitive",
+             "time_to_treat", "treatment", "treatment_status", all_of(y_var), all_of(cov_vars))) %>% 
+    drop_na() %>% 
+    as.data.frame() %>% 
+    group_by(oktmo) %>% 
+    mutate(group = get_group(treatment_status)) %>% 
+    ungroup() %>% 
+    filter(!(group %in% c("unexpected", "1 -> 2", "1", "2"))) %>% # exclude always treated and treatment reversals
+    group_by(oktmo) %>% 
+    mutate(first.treat = get_first.treat(treatment, year)) %>% 
+    ungroup() %>% 
+    mutate(first.treat.nc = first.treat*(1-competitive)) %>%
+    mutate(treat = ifelse(first.treat == 0, 0, 1)) %>% 
+    mutate(time_to_treat = ifelse(treat==1, year - first.treat, 0))
+  
+  return(data)
+}
+
+
+num_treated_and_never_treated <- function(data) {
+  res <- data %>% 
+    group_by(settlement) %>% 
+    summarise(type = get_group(treatment)[1]) %>% 
+    ungroup() %>% 
+    count(type)
+  return(res) 
+}
 
 big_cities <- big_cities %>% 
   group_by(oktmo) %>% mutate(group = get_group(treatment_status)) %>% ungroup()
@@ -257,11 +312,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>% 
-  filter(group != "unexpected") %>% 
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013002_1_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -303,6 +355,18 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
+
 ################################################################################
 
 # расходы на общегосударственные вопросы на душу с минимальным набором контролей
@@ -312,11 +376,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013002_212_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -358,6 +419,18 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
+
 ################################################################################
 
 # расходы на ЖКХ на душу с минимальным набором контролей
@@ -367,11 +440,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013002_229_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -413,6 +483,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # расходы на социальную политику на душу с минимальным набором контролей
@@ -422,11 +503,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013002_234_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -468,6 +546,19 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
+
 ################################################################################
 
 # доля инвестиций за счет бюджета с минимальным набором контролей
@@ -477,11 +568,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(invest_budg ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -523,6 +611,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # доля инвестиций за счет федерального бюджета с минимальным набором контролей
@@ -532,11 +631,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(invest_fed ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -578,6 +674,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # инвестиции в ОК на душу с минимальным набором контролей
@@ -587,11 +694,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_investment_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -633,6 +737,18 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
+
 ################################################################################
 
 # инвестиции в ОК за счет муниципалитета на душу с минимальным набором контролей
@@ -642,11 +758,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8009001_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -688,6 +801,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # доля водопроводной сети нуждающейся в замене с минимальным набором контролей
@@ -697,11 +821,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(t8008008_t8008007 ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -743,6 +864,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2021)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # все доходы на душу с минимальным набором контролей
@@ -752,11 +884,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_1_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -798,6 +927,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # доходы от НДФЛ на душу с минимальным набором контролей
@@ -807,11 +947,8 @@ cov_vars <- c("log_build_flat",
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_5_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + 
@@ -853,6 +990,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # доходы от налогов на имущество на душу с минимальным набором контролей
@@ -862,11 +1010,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_15_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -908,6 +1053,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # доходы от налогов на совокупный доход на душу с минимальным набором контролей
@@ -917,11 +1073,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_14_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -963,6 +1116,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # субсидии на душу с минимальным набором контролей
@@ -972,11 +1136,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_296_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -1018,6 +1179,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # субвенции на душу с минимальным набором контролей
@@ -1027,11 +1199,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_294_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -1073,6 +1242,18 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
+
 ################################################################################
 
 # дотации на душу с минимальным набором контролей
@@ -1082,11 +1263,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_293_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -1128,6 +1306,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # собственные доходы на душу с минимальным набором контролей
@@ -1137,11 +1326,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_89_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -1183,6 +1369,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # безвозмездные поступления на душу с минимальным набором контролей
@@ -1192,11 +1389,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_t8013001_34_c_pc ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -1238,6 +1432,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # кредиторская задолженность на душу с минимальным набором контролей
@@ -1247,11 +1452,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_mun_debt_c_pf ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -1293,6 +1495,17 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
 ################################################################################
 
 # прибыль муниципальных предприятий на предприятие с минимальным набором контролей
@@ -1302,11 +1515,8 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
 
 mod_twfe = feols(ln_mun_firms_profit_c_pf ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -1348,6 +1558,19 @@ legend("bottomleft", col = c(1, 2), pch = c(20, 17),
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
 
 
+
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
+
+
 ################################################################################
 
 # число отчитавшихся муниципальных предприятий с минимальным набором контролей
@@ -1357,11 +1580,9 @@ cov_vars <- c("log_build_flat", "log_new_housing", "ln_catering_c_pc", "ln_const
               "ln_living_space", "ln_n_companies", "pop_work", "log_population", "log_wage",
               "ln_workers", "ln_t8006003", "ln_pension_c")
 
-data <- big_cities %>%    
-  filter(group != "unexpected") %>%  
-  select(c("settlement", "region", "year", "treat", "first.treat", 
-           "time_to_treat", "treatment", y_var, all_of(cov_vars))) %>% 
-  drop_na() %>% as.data.frame()
+data <- get_estimation_data(big_cities, y_var, cov_vars)
+data %>% num_treated_and_never_treated()
+
 
 mod_twfe = feols(ln_n_mun_firms_reported ~ i(time_to_treat, treat, ref = -1) + 
                    log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
@@ -1401,6 +1622,19 @@ iplot(list(mod_twfe, mod_sa), sep = 0.5, ref.line = -1,
       main = 'Event study: Staggered treatment')
 legend("bottomleft", col = c(1, 2), pch = c(20, 17), 
        legend = c("TWFE", "Sun & Abraham (2020)"), cex = 0.7)
+
+
+
+res = event_study(
+  data = data, yname = y_var, idname = "oktmo",
+  tname = "year", gname = "first.treat", estimator = c("all"),
+  xformla = ~ log_build_flat + log_new_housing + ln_catering_c_pc + ln_construction_c_pc +
+    ln_retail_c_pc + ln_volume_electr_c_pc + ln_volume_manufact_c_pc + ln_doctors_per10 +
+    ln_living_space + ln_n_companies + pop_work + log_population + log_wage +
+    ln_workers + ln_t8006003 + ln_pension_c
+)
+
+plot_event_study(res, horizon = c(-5,10))
 
 
 

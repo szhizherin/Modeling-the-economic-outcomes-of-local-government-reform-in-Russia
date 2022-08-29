@@ -7,13 +7,13 @@
 
 
 library(did)
-library(did2s)
 library(dplyr)
 library(data.table)
 library(plm)
 library(fixest)
 library(readr)
 library(tidyr)
+library(did2s)
 
 
 
@@ -223,6 +223,26 @@ big_cities$share_culture_workers <- big_cities$t8016002 / big_cities$workers # �
 
 big_cities$wages_payed <- big_cities$wage_c * big_cities$workers
 
+
+# ln
+big_cities$ln_t8013002_1_c_pc <- log(big_cities$t8013002_1_c_pc)
+big_cities$ln_t8013002_212_c_pc <- log(big_cities$t8013002_212_c_pc)
+big_cities$ln_t8013002_221_c_pc <- log(big_cities$t8013002_221_c_pc)
+big_cities$ln_t8013002_229_c_pc <- log(big_cities$t8013002_229_c_pc)
+big_cities$ln_t8013002_234_c_pc <- log(big_cities$t8013002_234_c_pc)
+big_cities$ln_t8013002_239_c_pc <- log(big_cities$t8013002_239_c_pc)
+big_cities$ln_investment_c_pc <- log(big_cities$investment_c_pc)
+big_cities$ln_t8009001_c_pc <- log(big_cities$t8009001_c_pc + 1e-5)
+big_cities$ln_t8013001_1_c_pc <- log(big_cities$t8013001_1_c_pc)
+big_cities$ln_t8013001_5_c_pc <- log(big_cities$t8013001_5_c_pc)
+big_cities$ln_t8013001_15_c_pc <- log(big_cities$t8013001_15_c_pc)
+big_cities$ln_t8013001_14_c_pc <- log(big_cities$t8013001_14_c_pc)
+big_cities$ln_t8013001_296_c_pc <- log(big_cities$t8013001_296_c_pc)
+big_cities$ln_t8013001_294_c_pc <- log(big_cities$t8013001_294_c_pc)
+big_cities$ln_t8013001_293_c_pc <- log(big_cities$t8013001_293_c_pc + 1e-5)
+big_cities$ln_t8013001_89_c_pc <- log(big_cities$t8013001_89_c_pc)
+big_cities$ln_t8013001_34_c_pc <- log(big_cities$t8013001_34_c_pc)
+
 non_competitive_elections <- c("Чеченская республика", "Республика Дагестан", 
                                "Республика Ингушетия", 
                                "Карачаево-Черкесская республика", "Республика Тыва", 
@@ -311,8 +331,6 @@ intersect(non_competitive_elections, non_competitive_elections_carnegie_last30) 
 big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections_carnegie_less30)
 2094 - big_cities$competitive %>% sum()
 
-big_cities$competitive <- 1 * !(big_cities$region %in% non_competitive_elections)
-
 
 ################################################################################
 
@@ -388,14 +406,11 @@ data %>% mutate(treatment = treatment * (1 - competitive)) %>% num_treated_and_n
 data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 data %>% filter(competitive == 1) %>% num_treated_and_never_treated()
 
-mod_sa = feols(n_mun_firms_reported ~ sunab(first.treat, year) + 
-                 log_build_flat + log_new_housing + catering_c_pc + construction_c_pc +
-                 retail_c_pc + volume_electr_c_pc + volume_manufact_c_pc + doctors_per10 +
-                 living_space + n_companies + pop_work + log_population + log_wage +
-                 workers + t8006003 + pension_c | 
+data_sa <- get_estimation_data(big_cities, y_var, c())
+mod_sa = feols(n_mun_firms_reported ~ sunab(first.treat, year) | 
                  settlement + year,  
                cluster = ~region,  
-               data = data)
+               data = data_sa)
 summary(mod_sa, agg = "att")
 
 iplot(mod_sa, ci_level = 0.99, ref.line = -1,
@@ -425,12 +440,45 @@ cov_vars <- c("log_build_flat",
               "workers", "t8006003", "pension_c", "schools_per_1000", "pupils_per_1000",
               "t8006007")
 
-data <- get_estimation_data(big_cities, y_var, cov_vars)
+data <- get_estimation_data(big_cities, y_var, cov_vars) #%>% 
+  #filter(!(settlement %in% c("Салехард", "Ноябрьск")))
 
 data %>% num_treated_and_never_treated()
 data %>% mutate(treatment = treatment * (1 - competitive)) %>% num_treated_and_never_treated()
 data %>% filter(competitive == 0) %>% num_treated_and_never_treated()
 data %>% filter(competitive == 1) %>% num_treated_and_never_treated()
+
+###################################
+
+data %>% filter(treat == 1) %>% select(settlement) %>% unique() %>% View()
+
+
+# control
+data %>% 
+  filter(group == "0") %>% 
+  group_by(year) %>% summarise(avg = mean(t8013002_1_c_pc)) %>% plot(type = "b",
+                                                                     pch = 2,
+                                                                     ylim = c(3000, 12000),
+                                                                     cex = 1.5,
+                                                                     xlab = "", 
+                                                                     ylab = "")
+# treated
+set <- "Элиста"
+data[data$settlement == set, c("year", "t8013002_1_c_pc")] %>% lines(type = "b", cex=1.5)
+abline(v = data[data$settlement == set, "first.treat"][[1]])
+
+###################################
+# расходы выросли: 
+# Благовещенск, Калуга, Подольск, Магнитогорск, Элиста
+# расходы снизились:
+# Нарьян-Мар, Петропавловск-Камчатский, Новокуйбышевск, Ханты-Мансийск, Сургут,
+# Салехард, Новый Уренгой, Ноябрьск
+# Офигенно большие в смысле на душу населения: 
+# Мурманск, Ханты-Мансийск, Нарьян-Мар, Петропавловск-Камчатский, Магадан, 
+# Южно-Сахалинск, Нефтеюганск, Нижневартовск, Сургут, Салехард, Новый Уренгой,
+# Ноябрьск
+# точно не было эффека:
+# Белово, Прокопьевск, Краснодар
 
 mod_sa = feols(t8013002_1_c_pc ~ sunab(first.treat*(1-competitive), year) + treatment +
                  log_build_flat  + 
